@@ -8,7 +8,7 @@ import { AlertCircle, Check, Loader2, ChevronLeft, Download, Printer, Lock, Hear
 type ProductType = 'digital' | 'print';
 
 export default function CheckoutModal() {
-  const { setStep, setError, error } = useUploadContext();
+  const { setStep, setError, error, requestId } = useUploadContext();
   const [formData, setFormData] = useState({ email: '', fullName: '' });
   const [selectedProduct, setSelectedProduct] = useState<ProductType>('digital');
   const [processing, setProcessing] = useState(false);
@@ -74,6 +74,7 @@ export default function CheckoutModal() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           productType: selectedProduct,
+          requestId,
           email: formData.email,
           fullName: formData.fullName,
         }),
@@ -93,9 +94,18 @@ export default function CheckoutModal() {
 
       setCompleted(true);
 
+      // Persist requestId so we can redirect back after payment
+      if (requestId) {
+        localStorage.setItem('noblified_request_id', requestId);
+      }
+
       // Brief success flash before redirect
       setTimeout(() => {
-        window.location.href = checkoutUrl;
+        window.location.href =
+          checkoutUrl +
+          `&return_url=${encodeURIComponent(
+            `https://yourdomain.com/result/${requestId}?checkout=complete`
+          )}`;
       }, 1000);
     } catch (err) {
       console.error('[Checkout] Error:', err);

@@ -14,11 +14,15 @@ const PRINT_VARIANT_ID = process.env.NEXT_PHYSICAL_PRINT_VARIENT_ID || '';
  */
 export const shopifyFetch = async (query: string, variables?: Record<string, any>) => {
   if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_TOKEN) {
-    console.warn('Shopify credentials not configured. Using mock data.');
+    console.error('[Shopify] Credentials not configured:', {
+      domain: SHOPIFY_STORE_DOMAIN ? '✓ set' : '✗ missing',
+      token: SHOPIFY_STOREFRONT_TOKEN ? '✓ set' : '✗ missing',
+    });
     return null;
   }
 
   const url = `https://${SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`;
+  console.log('[Shopify] Fetching:', url);
 
   const response = await fetch(url, {
     method: 'POST',
@@ -30,10 +34,19 @@ export const shopifyFetch = async (query: string, variables?: Record<string, any
   });
 
   if (!response.ok) {
-    throw new Error(`Shopify API error: ${response.statusText}`);
+    const text = await response.text();
+    console.error('[Shopify] HTTP error:', response.status, text);
+    throw new Error(`Shopify API error (${response.status}): ${text}`);
   }
 
   const data = await response.json();
+
+  // Check for GraphQL errors
+  if (data.errors) {
+    console.error('[Shopify] GraphQL errors:', JSON.stringify(data.errors, null, 2));
+    throw new Error(`Shopify GraphQL error: ${data.errors[0]?.message || 'Unknown error'}`);
+  }
+
   return data;
 };
 
@@ -79,6 +92,14 @@ export const CREATE_CART_MUTATION = `
       cart {
         id
         checkoutUrl
+        attributes {
+          key
+          value
+        }
+      }
+      userErrors {
+        field
+        message
       }
     }
   }
@@ -114,19 +135,36 @@ export const fetchShopifyProducts = async (limit: number = 12) => {
  * @returns Checkout URL for redirecting to Shopify checkout
  */
 export const createShopifyCheckout = async (
-  lineItems: Array<{ variantId: string; quantity: number }>
+  lineItems: Array<{ merchandiseId: string; quantity: number }>,
+  requestId: string
 ) => {
   try {
+    console.log('[Shopify] Creating cart with lines:', JSON.stringify(lineItems), 'requestId:', requestId);
+
     const response = await shopifyFetch(CREATE_CART_MUTATION, {
       input: {
-        lines: lineItems,
+        lines: lineItems.map(item => ({
+          ...item,
+          attributes: [{ key: 'request_id', value: requestId }],
+        })),
+        attributes: [{ key: 'request_id', value: requestId }],
       },
     });
-    return response?.data?.cartCreate?.cart?.checkoutUrl;
+
+    // Check for userErrors from the mutation
+    const userErrors = response?.data?.cartCreate?.userErrors;
+    if (userErrors && userErrors.length > 0) {
+      console.error('[Shopify] Cart userErrors:', JSON.stringify(userErrors, null, 2));
+      throw new Error(`Cart creation failed: ${userErrors[0].message}`);
+    }
+
+    const checkoutUrl = response?.data?.cartCreate?.cart?.checkoutUrl;
+    console.log('[Shopify] Checkout URL:', checkoutUrl);
+    return checkoutUrl;
   } catch (error) {
-    console.error('Error creating Shopify checkout:', error);
+    console.error('[Shopify] Error creating checkout:', error);
+    throw error;
   }
-  return null;
 };
 
 /**
@@ -135,7 +173,8 @@ export const createShopifyCheckout = async (
  * @returns The Shopify checkout URL, or null on error
  */
 export const createCart = async (
-  productType: 'digital' | 'print'
+  productType: 'digital' | 'print',
+  requestId: string
 ): Promise<string | null> => {
   const variantId =
     productType === 'digital' ? HD_VARIANT_ID : PRINT_VARIANT_ID;
@@ -150,7 +189,9 @@ export const createCart = async (
     ? variantId
     : `gid://shopify/ProductVariant/${variantId}`;
 
-  return createShopifyCheckout([{ variantId: gid, quantity: 1 }]);
+  console.log(`[Shopify] createCart: type=${productType}, variantId=${variantId}, gid=${gid}, requestId=${requestId}`);
+
+  return createShopifyCheckout([{ merchandiseId: gid, quantity: 1 }], requestId);
 };
 
 /**

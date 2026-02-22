@@ -229,6 +229,9 @@ export default function PreviewStep() {
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current);
     }
+    localStorage.removeItem('noblified_request_id');
+    setPreviewUrl(null);
+    setRequestId(null);
     isSubmittedRef.current = false;
     setStep('upload');
   };

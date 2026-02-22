@@ -135,13 +135,16 @@ export default function ResultPage() {
                         Download HD Portrait
                     </button>
 
-                    <a
-                        href="/"
+                    <button
+                        onClick={() => {
+                            localStorage.removeItem('noblified_request_id');
+                            window.location.href = '/';
+                        }}
                         className="w-full py-4 border border-primary text-primary rounded-lg font-semibold hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
                     >
                         <RotateCcw className="w-5 h-5" />
                         Create Another Portrait
-                    </a>
+                    </button>
                 </motion.div>
 
                 {/* Info */}

@@ -14,9 +14,9 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full">
       {/* Top banner */}
-      <div className="bg-white text-black py-2 px-4 text-center text-xs md:text-sm font-medium">
+      {/* <div className="bg-white text-black py-2 px-4 text-center text-xs md:text-sm font-medium">
         Free Shipping on Oil Paintings | #1 on TrustCaptain
-      </div>
+      </div> */}
 
       {/* Main header */}
       <div className="bg-background border-b border-border px-4 md:px-8 py-6">

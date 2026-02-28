@@ -23,6 +23,7 @@ export interface UploadContextType {
   processing: boolean;
   error: string | null;
   purchaseData: PurchaseData | null;
+  prompt: string;
 
   // Actions
   setStep: (step: UploadStep) => void;
@@ -35,6 +36,7 @@ export interface UploadContextType {
   setProcessing: (processing: boolean) => void;
   setError: (error: string | null) => void;
   setPurchaseData: (data: PurchaseData | null) => void;
+  setPrompt: (prompt: string) => void;
   reset: () => void;
 }
 
@@ -51,6 +53,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [purchaseData, setPurchaseData] = useState<PurchaseData | null>(null);
+  const [prompt, setPrompt] = useState<string>('baroque');
 
   const reset = () => {
     setStep('upload');
@@ -63,6 +66,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setProcessing(false);
     setError(null);
     setPurchaseData(null);
+    setPrompt('baroque');
   };
 
   const value: UploadContextType = {
@@ -76,6 +80,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     processing,
     error,
     purchaseData,
+    prompt,
     setStep,
     setUploadedImage,
     setGeneratedImage,
@@ -86,6 +91,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setProcessing,
     setError,
     setPurchaseData,
+    setPrompt,
     reset,
   };
 

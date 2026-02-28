@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useUploadContext } from '@/lib/uploadContext';
 import { Upload, AlertCircle, InfoIcon } from 'lucide-react';
 import CredibilitySection from '@/components/credibility/CredibilitySection';
+import PromptCarousel from '@/components/steps/PromptCarousel';
 
 export default function UploadStep() {
   const { setUploadedImage, setStep, setError, error, style } = useUploadContext();
@@ -75,11 +76,13 @@ export default function UploadStep() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-background py-6 md:py-12 px-4 md:px-8"
+      className="min-h-screen bg-background py-4 md:py-12 px-4 md:px-8"
     >
-      <div className="max-w-2xl mx-auto space-y-6 md:space-y-12">
+      <div className="max-w-2xl mx-auto space-y-4 md:space-y-12">
+        <PromptCarousel />
+
         {/* Hero Section */}
-        <div className="text-center space-y-4 pt-4 md:pt-8">
+        <div className="text-center space-y-2 pt-2 md:pt-8">
           <motion.h2
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -95,7 +98,7 @@ export default function UploadStep() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-lg text-muted-foreground"
+            className="text-sm md:text-lg text-muted-foreground"
           >
             See yourself as a timeless masterpiece. Free preview · No credit card required.
           </motion.p>
@@ -110,7 +113,7 @@ export default function UploadStep() {
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          className={`relative border-2 border-dashed rounded-2xl p-6 md:p-12 text-center transition-colors cursor-pointer ${isDragActive
+          className={`relative border-2 border-dashed rounded-xl md:rounded-2xl p-4 md:p-12 text-center transition-colors cursor-pointer ${isDragActive
             ? 'border-primary bg-primary/5'
             : 'border-border hover:border-primary/50'
             }`}
@@ -125,25 +128,25 @@ export default function UploadStep() {
           />
 
           {preview ? (
-            <div className="space-y-4">
+            <div className="space-y-2 md:space-y-4">
               <div className="relative inline-block">
                 <img
                   src={preview}
                   alt="Preview"
-                  className="max-h-48 rounded-lg"
+                  className="max-h-32 md:max-h-48 rounded-lg"
                 />
               </div>
-              <p className="text-sm text-muted-foreground">Click to change image</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Click to change image</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-2 md:space-y-4">
               <div className="flex justify-center">
-                <div className="bg-card rounded-full p-4 border border-border">
-                  <Upload className="w-8 h-8 text-primary" />
+                <div className="bg-card rounded-full p-2 md:p-4 border border-border">
+                  <Upload className="w-5 h-5 md:w-8 md:h-8 text-primary" />
                 </div>
               </div>
-              <div className="space-y-2">
-                <p className="text-base font-semibold text-foreground">
+              <div className="space-y-1 md:space-y-2 px-2 md:px-0">
+                <p className="text-sm md:text-base font-semibold text-foreground">
                   Upload your photos below. (Peasants, nobility, and pets are all welcome.)
                 </p>
                 <p className="text-xs text-muted-foreground">
@@ -155,7 +158,7 @@ export default function UploadStep() {
         </motion.div>
 
         {/* Substyle Helper */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
@@ -163,7 +166,7 @@ export default function UploadStep() {
         >
           <InfoIcon className='mr-2' /> Subject: <span className="capitalize font-bold">{style}</span>
           {' '}(Toggle in header to switch to {style === 'humans' ? 'Pets' : 'Humans'})
-        </motion.div>
+        </motion.div> */}
 
         {/* Error Message */}
         {error && (

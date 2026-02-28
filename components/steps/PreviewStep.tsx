@@ -215,6 +215,7 @@ export default function PreviewStep() {
     localStorage.removeItem('noblified_request_id');
     setPreviewUrl(null);
     setRequestId(null);
+    setProcessing(true);
     isSubmittedRef.current = false;
     setStep('upload');
   };

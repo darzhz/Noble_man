@@ -15,6 +15,7 @@ services:
       - "traefik.http.routers.noble.entrypoints=websecure"
       - "traefik.http.routers.noble.tls=true"
       - "traefik.http.services.noble.loadbalancer.server.port=3000"
+      - "traefik.http.routers.noble.tls.certresolver=main-resolver"
 
 networks:
   frappe_net:

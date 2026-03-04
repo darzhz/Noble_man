@@ -105,7 +105,7 @@ export default function SuccessStep() {
             Create Another Portrait
           </button>
           <p className="text-sm text-muted-foreground">
-            ✨ Thank you for supporting Noblified!
+            ✨ Thank you for supporting Nobilified!
           </p>
         </motion.div>
 

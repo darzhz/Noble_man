@@ -59,7 +59,7 @@ export default function Navigation() {
       >
         {/* Logo */}
         <div className="p-8 border-b border-sidebar-border">
-          <h1 className="text-3xl font-bold text-sidebar-primary">Noblified</h1>
+          <h1 className="text-3xl font-bold text-sidebar-primary">Nobilified</h1>
           <p className="text-xs text-sidebar-foreground/60 mt-1">AI Nobel Paintings</p>
         </div>
 

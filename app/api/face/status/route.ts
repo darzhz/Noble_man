@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFaceSwapStatus } from '@/lib/faceswap';
+import { getFaceSwapStatus, FaceSwapStatusResponse } from '@/lib/faceswap';
 
 export async function POST(request: NextRequest) {
     try {
@@ -13,11 +13,9 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const result = await getFaceSwapStatus(request_id);
+        const result: FaceSwapStatusResponse = await getFaceSwapStatus(request_id);
 
-        return NextResponse.json({
-            message: result,
-        });
+        return NextResponse.json({ message: result });
     } catch (error) {
         console.error('[API] Face swap status error:', error);
         return NextResponse.json(

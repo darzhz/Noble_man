@@ -24,7 +24,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
                 className="flex flex-col items-center"
             >
                 <span className="font-serif text-5xl md:text-7xl font-bold text-foreground leading-none italic">
-                    Noblified
+                    Nobilified
                 </span>
                 <motion.div
                     initial={{ width: 0 }}

@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, Download, RotateCcw, Loader2 } from 'lucide-react';
+import { Check, Download, RotateCcw, Loader2, Lock } from 'lucide-react';
 
 interface ResultData {
     status: string;
     image_data_url?: string;
+    is_paid?: boolean; // Hydrated from DB in a full implementation
 }
 
 export default function ResultPage() {
@@ -106,18 +107,27 @@ export default function ResultPage() {
 
                 {/* Portrait */}
                 {result.image_data_url && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="rounded-lg overflow-hidden border border-border bg-card"
-                    >
-                        <img
-                            src={result.image_data_url}
-                            alt="Your portrait"
-                            className="w-full h-auto"
-                        />
-                    </motion.div>
+                    <div className="relative">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.2 }}
+                            className="rounded-lg overflow-hidden border-4 border-white shadow-xl bg-card"
+                        >
+                            <img
+                                src={result.image_data_url}
+                                alt="Your portrait"
+                                className="w-full h-auto"
+                            />
+                        </motion.div>
+
+                        {!result.is_paid && (
+                            <div className="absolute top-4 right-4 bg-background/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-2 shadow-sm border border-border">
+                                <Lock className="w-4 h-4 text-primary" />
+                                <span className="text-xs font-bold uppercase tracking-wider text-foreground">Watermarked Preview</span>
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {/* Actions */}
@@ -127,13 +137,27 @@ export default function ResultPage() {
                     transition={{ delay: 0.3 }}
                     className="space-y-4"
                 >
-                    <button
-                        onClick={handleDownload}
-                        className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
-                    >
-                        <Download className="w-5 h-5" />
-                        Download HD Portrait
-                    </button>
+                    {result.is_paid ? (
+                        <button
+                            onClick={handleDownload}
+                            className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Download className="w-5 h-5" />
+                            Download HD Portrait
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => {
+                                // In a full implementation, this routes to checkout
+                                alert("Redirecting to Shopify checkout...");
+                                window.location.href = '/';
+                            }}
+                            className="w-full py-4 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2"
+                        >
+                            <Lock className="w-5 h-5" />
+                            Unlock HD Version
+                        </button>
+                    )}
 
                     <button
                         onClick={() => {
@@ -149,7 +173,7 @@ export default function ResultPage() {
 
                 {/* Info */}
                 <div className="pt-6 border-t border-border text-center text-sm text-muted-foreground space-y-2">
-                    <p>✨ Thank you for choosing Noblified!</p>
+                    <p>✨ Thank you for choosing Nobilified!</p>
                     <p>
                         Questions?{' '}
                         <a href="mailto:support@noblified.com" className="text-primary hover:underline">

@@ -25,7 +25,8 @@ const FUNNY_MESSAGES = [
 export default function PreviewStep() {
   const {
     setStep,
-    uploadedImage,
+    uploadedImages,
+    promptTemplate,
     setGeneratedImage,
     generatedImage,
     setWatermarkedImage,
@@ -93,11 +94,15 @@ export default function PreviewStep() {
     },
   ];
 
-  // (Keeping your existing logic functions: fileToBase64, pollStatus, useEffects, handleBack)
+  // Helper: convert File to base64 and strip the data URL prefix
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
+      reader.onload = () => {
+        const result = reader.result as string;
+        // Strip data:image/png;base64, prefix if present
+        resolve(result.includes(',') ? result.split(',')[1] : result);
+      };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
@@ -135,7 +140,8 @@ export default function PreviewStep() {
         setStep('preview');
         return;
       } else if (status === 'Failed') {
-        setError(data.message?.error || 'Portrait generation failed. Please try again.');
+        // Look for the corrected error_message field from the API
+        setError(data.message?.error_message || data.message?.error || 'Portrait generation failed. Please try again.');
         setProcessing(false);
         return;
       }
@@ -151,17 +157,35 @@ export default function PreviewStep() {
 
   useEffect(() => {
     const submitImage = async () => {
-      if (!uploadedImage || isSubmittedRef.current) return;
+      if (!uploadedImages || uploadedImages.length === 0 || isSubmittedRef.current) return;
       isSubmittedRef.current = true;
       try {
         setProcessing(true);
         setError(null);
-        const base64 = await fileToBase64(uploadedImage);
+
+        // Convert all images to base64
+        const base64Images = await Promise.all(uploadedImages.map(fileToBase64));
         const userId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+        const payload: any = {
+          user_id: userId,
+        };
+
+        // Pass either singular 'image' or plural 'images' based on count
+        if (base64Images.length === 1) {
+          payload.image = base64Images[0];
+        } else {
+          payload.images = base64Images;
+        }
+
+        if (promptTemplate) {
+          payload.prompt_template = promptTemplate;
+        }
+
         const res = await fetch('/api/face/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ image: base64, user_id: userId }),
+          body: JSON.stringify(payload),
         });
         if (!res.ok) {
           const errData = await res.json();
@@ -182,7 +206,7 @@ export default function PreviewStep() {
     };
     submitImage();
     return () => { if (pollTimerRef.current) clearTimeout(pollTimerRef.current); };
-  }, [uploadedImage, setProcessing, setError, setRequestId, pollStatus]);
+  }, [uploadedImages, promptTemplate, setProcessing, setError, setRequestId, pollStatus]);
 
   // Cycle through funny messages every few seconds while processing
   useEffect(() => {

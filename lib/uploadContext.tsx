@@ -14,7 +14,10 @@ export interface PurchaseData {
 
 export interface UploadContextType {
   step: UploadStep;
+  /** Single file kept for backward-compat (first item of uploadedImages) */
   uploadedImage: File | null;
+  /** All selected images (1–5) */
+  uploadedImages: File[];
   generatedImage: Blob | null;
   watermarkedImage: Blob | null;
   generatedImageUrl: string | null;
@@ -24,10 +27,13 @@ export interface UploadContextType {
   error: string | null;
   purchaseData: PurchaseData | null;
   prompt: string;
+  /** Name of a Prompt Template on the backend (empty string = use backend default) */
+  promptTemplate: string;
 
   // Actions
   setStep: (step: UploadStep) => void;
   setUploadedImage: (file: File | null) => void;
+  setUploadedImages: (files: File[]) => void;
   setGeneratedImage: (blob: Blob | null) => void;
   setWatermarkedImage: (blob: Blob | null) => void;
   setGeneratedImageUrl: (url: string | null) => void;
@@ -37,6 +43,7 @@ export interface UploadContextType {
   setError: (error: string | null) => void;
   setPurchaseData: (data: PurchaseData | null) => void;
   setPrompt: (prompt: string) => void;
+  setPromptTemplate: (template: string) => void;
   reset: () => void;
 }
 
@@ -44,7 +51,7 @@ const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
 export function UploadProvider({ children }: { children: ReactNode }) {
   const [step, setStep] = useState<UploadStep>('upload');
-  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [uploadedImages, setUploadedImagesState] = useState<File[]>([]);
   const [generatedImage, setGeneratedImage] = useState<Blob | null>(null);
   const [watermarkedImage, setWatermarkedImage] = useState<Blob | null>(null);
   const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
@@ -54,10 +61,21 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [purchaseData, setPurchaseData] = useState<PurchaseData | null>(null);
   const [prompt, setPrompt] = useState<string>('baroque');
+  const [promptTemplate, setPromptTemplate] = useState<string>('');
+
+  /** Set an array of uploaded images; also keeps uploadedImage in sync */
+  const setUploadedImages = (files: File[]) => {
+    setUploadedImagesState(files);
+  };
+
+  /** Legacy single-image setter — wraps into the array */
+  const setUploadedImage = (file: File | null) => {
+    setUploadedImagesState(file ? [file] : []);
+  };
 
   const reset = () => {
     setStep('upload');
-    setUploadedImage(null);
+    setUploadedImagesState([]);
     setGeneratedImage(null);
     setWatermarkedImage(null);
     setGeneratedImageUrl(null);
@@ -67,11 +85,13 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setError(null);
     setPurchaseData(null);
     setPrompt('baroque');
+    setPromptTemplate('');
   };
 
   const value: UploadContextType = {
     step,
-    uploadedImage,
+    uploadedImage: uploadedImages[0] ?? null,
+    uploadedImages,
     generatedImage,
     watermarkedImage,
     generatedImageUrl,
@@ -81,8 +101,10 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     error,
     purchaseData,
     prompt,
+    promptTemplate,
     setStep,
     setUploadedImage,
+    setUploadedImages,
     setGeneratedImage,
     setWatermarkedImage,
     setGeneratedImageUrl,
@@ -92,6 +114,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setError,
     setPurchaseData,
     setPrompt,
+    setPromptTemplate,
     reset,
   };
 

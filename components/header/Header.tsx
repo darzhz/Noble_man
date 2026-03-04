@@ -26,7 +26,7 @@ export default function Header() {
             {/* Logo - Left */}
             <div className="flex flex-col">
               <h1 className="font-serif text-xl md:text-2xl font-bold text-foreground leading-none">
-                Noblified
+                Nobilified
               </h1>
               <p className="font-serif text-[10px] md:text-xs italic text-primary mt-1">
                 Hand-painted Royalty

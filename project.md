@@ -40,7 +40,7 @@ NEXT_PHYSICAL_PRINT_VARIENT_ID=
 NEXT_DIGITAL_VARIENT_ID=
 SHOPIFY_ADMIN_TOKEN=
 SHOPIFY_API_SECRET=
-
+FACE_SWAP_TOKEN=
 ```
 
 ---
@@ -57,7 +57,7 @@ X-Face-Swap-Token: process.env.FACE_SWAP_TOKEN
 
 ---
 
-## Step 1 — Submit Image
+## Step 1 — Submit Image(s)
 
 POST:
 
@@ -65,16 +65,53 @@ POST:
 https://api.darzh.xyz/api/method/new_face.api.face_swap.process
 ```
 
-Body:
+API accepts **1 to 5 images**. Backend rejects 0 or >5.
+
+### Option A — JSON body (recommended)
+
+Body (single image — backward compatible):
 
 ```json
 {
   "image": "<base64 without data prefix>",
   "user_id": "<shopify session id or uuid>",
   "customer_name": "",
-  "customer_email": ""
+  "customer_email": "",
+  "callback_url": "<optional push URL>",
+  "prompt_template": "<optional — exact name of Prompt Template on backend>"
 }
 ```
+
+Body (multiple images — use `images` array):
+
+```json
+{
+  "images": ["<base64_1>", "<base64_2>"],
+  "user_id": "<shopify session id or uuid>",
+  "customer_name": "",
+  "customer_email": "",
+  "callback_url": "<optional push URL>",
+  "prompt_template": "<optional — exact name of Prompt Template on backend>"
+}
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `image` | Yes (if `images` not set) | Single base64 string |
+| `images` | Yes (if `image` not set) | Array of base64, max 5 |
+| `user_id` | Yes | Shopify session or customer ID |
+| `customer_name` | No | Customer full name |
+| `customer_email` | No | Customer email |
+| `callback_url` | No | Backend POSTs result here when done |
+| `prompt_template` | No | Named template; falls back to backend default if omitted |
+
+### Option B — Multipart form upload
+
+Do **not** set `Content-Type` — browser sets it automatically with multipart boundary.
+
+Append each file under the same field name `images` (repeated).
+
+---
 
 Response:
 
@@ -87,7 +124,7 @@ Response:
 }
 ```
 
-Store request_id in DB.
+Store `request_id` in DB.
 
 ---
 
@@ -105,20 +142,30 @@ Body:
 { "request_id": "FSR-0001" }
 ```
 
-Possible statuses:
-
-* Queued
-* Processing
-* Completed
-* Failed
+Possible statuses: `Queued` → `Processing` → `Completed` or `Failed`
 
 When Completed:
 
-```
-message.image_data_url
+```json
+{
+  "message": {
+    "request_id": "FSR-0001",
+    "status": "Completed",
+    "image_b64": "<raw base64>",
+    "image_data_url": "data:image/png;base64,..."
+  }
+}
 ```
 
-Display it directly in `<img src="">`.
+When Failed:
+
+```json
+{ "message": { "status": "Failed", "error_message": "..." } }
+```
+
+Note: field is `error_message` (not `error`).
+
+Display result: `img.src = message.image_data_url`
 
 ---
 
@@ -257,6 +304,7 @@ face_requests
 * Validate Shopify webhook signature
 * Validate request ownership before allowing HD download
 * Rate limit polling
+* Never expose `FACE_SWAP_TOKEN` to the browser
 
 ---
 
@@ -264,18 +312,21 @@ face_requests
 
 Upload Page:
 
-* File input
+* Multi-file input (JPEG/PNG, `multiple`, max 5 files enforced client-side)
 * Submit button
-* Spinner
-* Poll status
-* Show watermarked image
+* Spinner / progress indicator during async processing (~30–90 s)
+* Poll `/api/face/status` every 5 s (max 60 attempts = 5 min timeout)
+* On Completed: show watermarked preview via `image_data_url`
+* On Failed: show human-readable `error_message`
 
 Result Page:
 
-* Show image
-* “Download Watermarked”
+* Show watermarked image
+* “Download Watermarked” (free)
 * “Buy HD – $25”
 * “Buy Print – $50”
+
+Unwatermarked image unlocked only after backend sets `payment_status = Paid`.
 
 Buy buttons call `/api/shopify/cart` to generate checkout.
 
@@ -321,3 +372,47 @@ If you'd like, I can now generate:
 * Or the actual starter code structure for your repo
 
 You’re now architecting this correctly.
+
+# 📝 TODO — TASKS TO IMPLEMENT (from updated API spec)
+
+## `lib/faceswap.ts`
+
+- [ ] Support `images: string[]` in `submitFaceSwap()` — send `images` (plural) when >1, `image` for single
+- [ ] Add `prompt_template?: string` and `callback_url?: string` optional params to `submitFaceSwap()`
+- [ ] Fix `FaceSwapStatusResponse`: rename `error` → `error_message` to match actual API response
+- [ ] Add `image_b64?: string` to `FaceSwapStatusResponse`
+- [ ] Add `submitFaceSwapMultipart(files: File[], userId: string, ...)` for FormData / multipart upload
+- [ ] Throw startup error if `FACE_SWAP_TOKEN` env var is missing
+
+## `app/api/face/process/route.ts`
+
+- [ ] Accept `image` (string) OR `images` (string[]) from request body
+- [ ] Forward `prompt_template` and `callback_url` fields if present
+- [ ] Return 400 if images count > 5 or == 0
+- [ ] Detect `multipart/form-data` content-type and route to multipart helper
+
+## `app/api/face/status/route.ts`
+
+- [ ] Map `error_message` (not `error`) from API response to client
+
+## `app/upload/page.tsx`
+
+- [ ] Change `<input>` to `multiple`, `accept="image/jpeg,image/png"`
+- [ ] Enforce max 5 client-side: `Array.from(files).slice(0, 5)`
+- [ ] Convert all files to base64 and submit as `images[]` array
+- [ ] Handle `error_message` field in Failed poll response (not `error`)
+- [ ] (Optional) Add `prompt_template` selector if templates are exposed by backend
+
+## `app/result/[id]/page.tsx`
+
+- [ ] Show unwatermarked image once `is_paid = true` (post-webhook DB update)
+- [ ] Visually distinguish watermarked preview from unlocked HD image
+
+## `lib/uploadContext.tsx`
+
+- [ ] Extend state to hold array of uploaded files (not single)
+- [ ] Track `prompt_template` selection in context if applicable
+
+## `.env.local`
+
+- [ ] Ensure `FACE_SWAP_TOKEN=` is present and documented

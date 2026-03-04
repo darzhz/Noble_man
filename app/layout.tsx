@@ -9,7 +9,7 @@ const _playfairDisplay = Playfair_Display({ subsets: ["latin"] });
 const _inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Noblified - Transform Your Photo into Royal Art',
+  title: 'Nobilified - Transform Your Photo into Royal Art',
   description: 'Become a timeless masterpiece. Upload your photo and get an instant AI-generated 18th-century oil portrait. Download digital or order a hand-painted print.',
   generator: 'v0.app',
   icons: {

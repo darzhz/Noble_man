@@ -377,42 +377,42 @@ You’re now architecting this correctly.
 
 ## `lib/faceswap.ts`
 
-- [ ] Support `images: string[]` in `submitFaceSwap()` — send `images` (plural) when >1, `image` for single
-- [ ] Add `prompt_template?: string` and `callback_url?: string` optional params to `submitFaceSwap()`
-- [ ] Fix `FaceSwapStatusResponse`: rename `error` → `error_message` to match actual API response
-- [ ] Add `image_b64?: string` to `FaceSwapStatusResponse`
-- [ ] Add `submitFaceSwapMultipart(files: File[], userId: string, ...)` for FormData / multipart upload
-- [ ] Throw startup error if `FACE_SWAP_TOKEN` env var is missing
+- [x] Support `images: string[]` in `submitFaceSwap()` — send `images` (plural) when >1, `image` for single
+- [x] Add `prompt_template?: string` and `callback_url?: string` optional params to `submitFaceSwap()`
+- [x] Fix `FaceSwapStatusResponse`: rename `error` → `error_message` to match actual API response
+- [x] Add `image_b64?: string` to `FaceSwapStatusResponse`
+- [x] Add `submitFaceSwapMultipart(files: File[], userId: string, ...)` for FormData / multipart upload
+- [x] Throw startup error if `FACE_SWAP_TOKEN` env var is missing
 
 ## `app/api/face/process/route.ts`
 
-- [ ] Accept `image` (string) OR `images` (string[]) from request body
-- [ ] Forward `prompt_template` and `callback_url` fields if present
-- [ ] Return 400 if images count > 5 or == 0
-- [ ] Detect `multipart/form-data` content-type and route to multipart helper
+- [x] Accept `image` (string) OR `images` (string[]) from request body
+- [x] Forward `prompt_template` and `callback_url` fields if present
+- [x] Return 400 if images count > 5 or == 0
+- [x] Detect `multipart/form-data` content-type and route to multipart helper
 
 ## `app/api/face/status/route.ts`
 
-- [ ] Map `error_message` (not `error`) from API response to client
+- [x] Map `error_message` (not `error`) from API response to client
 
 ## `app/upload/page.tsx`
 
-- [ ] Change `<input>` to `multiple`, `accept="image/jpeg,image/png"`
-- [ ] Enforce max 5 client-side: `Array.from(files).slice(0, 5)`
-- [ ] Convert all files to base64 and submit as `images[]` array
-- [ ] Handle `error_message` field in Failed poll response (not `error`)
-- [ ] (Optional) Add `prompt_template` selector if templates are exposed by backend
+- [x] Change `<input>` to `multiple`, `accept="image/jpeg,image/png"`
+- [x] Enforce max 5 client-side: `Array.from(files).slice(0, 5)`
+- [x] Convert all files to base64 and submit as `images[]` array
+- [x] Handle `error_message` field in Failed poll response (not `error`)
+- [x] (Optional) Add `prompt_template` selector if templates are exposed by backend
 
 ## `app/result/[id]/page.tsx`
 
-- [ ] Show unwatermarked image once `is_paid = true` (post-webhook DB update)
-- [ ] Visually distinguish watermarked preview from unlocked HD image
+- [x] Show unwatermarked image once `is_paid = true` (post-webhook DB update)
+- [x] Visually distinguish watermarked preview from unlocked HD image
 
 ## `lib/uploadContext.tsx`
 
-- [ ] Extend state to hold array of uploaded files (not single)
-- [ ] Track `prompt_template` selection in context if applicable
+- [x] Extend state to hold array of uploaded files (not single)
+- [x] Track `prompt_template` selection in context if applicable
 
 ## `.env.local`
 
-- [ ] Ensure `FACE_SWAP_TOKEN=` is present and documented
+- [x] Ensure `FACE_SWAP_TOKEN=` is present and documented

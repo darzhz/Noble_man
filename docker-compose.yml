@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  noble_nextjs:
+    build: .
+    container_name: noble_nextjs
+    restart: always
+    environment:
+      - NODE_ENV=production
+    networks:
+      - frappe_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.noble.rule=Host(`ai.noblified.com`)"
+      - "traefik.http.routers.noble.entrypoints=websecure"
+      - "traefik.http.routers.noble.tls=true"
+      - "traefik.http.services.noble.loadbalancer.server.port=3000"
+
+networks:
+  frappe_net:
+    external: true
+    name: frappe-docker_default   # change if yours is different

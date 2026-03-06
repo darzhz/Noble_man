@@ -250,13 +250,13 @@ export default function UploadStep() {
               >
                 <div className="grid grid-cols-3 gap-2 md:gap-4 max-w-lg mx-auto pb-4">
                   <div className="aspect-[4/5] rounded-xl overflow-hidden shadow-sm border border-border">
-                    <img src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=1548&auto=format&fit=crop" alt="Dog" className="w-full h-full object-cover" />
+                    <img src="/pet1.png" alt="Dog" className="w-full h-full object-cover" />
                   </div>
                   <div className="aspect-[4/5] rounded-xl overflow-hidden shadow-sm border border-border">
-                    <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=1443&auto=format&fit=crop" alt="Cat" className="w-full h-full object-cover" />
+                    <img src="/pet2.png" alt="Cat" className="w-full h-full object-cover" />
                   </div>
                   <div className="aspect-[4/5] rounded-xl overflow-hidden shadow-sm border border-border">
-                    <img src="https://images.unsplash.com/photo-1583337130417-3346a1be7dee?q=80&w=1528&auto=format&fit=crop" alt="Dog 2" className="w-full h-full object-cover" />
+                    <img src="/pet3.png" alt="Dog 2" className="w-full h-full object-cover" />
                   </div>
                 </div>
               </motion.div>

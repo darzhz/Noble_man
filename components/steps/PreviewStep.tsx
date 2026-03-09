@@ -136,6 +136,23 @@ export default function PreviewStep() {
         setWatermarkedImage(watermarked);
         const wmUrl = await blobToDataUrl(watermarked);
         setPreviewUrl(wmUrl);
+
+        // Save to cart local storage
+        try {
+          const newGen = {
+            id: reqId,
+            imageUrl: imageDataUrl,
+            date: new Date().toISOString(),
+          };
+          const history = JSON.parse(localStorage.getItem('nobilified_cart') || '[]');
+          if (!history.some((h: any) => h.id === reqId)) {
+            // Keep up to 20 items to prevent quota issues even with URLs
+            localStorage.setItem('nobilified_cart', JSON.stringify([newGen, ...history].slice(0, 20)));
+          }
+        } catch (e) {
+          console.error("Failed to save to cart", e);
+        }
+
         setProcessing(false);
         setStep('preview');
         return;
@@ -157,6 +174,16 @@ export default function PreviewStep() {
 
   useEffect(() => {
     const submitImage = async () => {
+      // Handle restore flow
+      if (requestId && (!uploadedImages || uploadedImages.length === 0) && !isSubmittedRef.current) {
+        isSubmittedRef.current = true;
+        setProcessing(true);
+        setStatusMessage('Restoring masterpiece...');
+        pollCountRef.current = 0;
+        pollTimerRef.current = setTimeout(() => pollStatus(requestId), 0);
+        return;
+      }
+
       if (!uploadedImages || uploadedImages.length === 0 || isSubmittedRef.current) return;
       isSubmittedRef.current = true;
       try {

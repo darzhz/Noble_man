@@ -180,14 +180,30 @@ export async function getFaceSwapStatus(
 ): Promise<FaceSwapStatusResponse> {
   const token = getToken();
 
-  const response = await fetch(`${FACE_SWAP_BASE_URL}.get_status`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Face-Swap-Token': token,
-    },
-    body: JSON.stringify({ request_id: requestId }),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
+  let response: Response;
+  try {
+    response = await fetch(`${FACE_SWAP_BASE_URL}.get_status`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Face-Swap-Token': token,
+      },
+      body: JSON.stringify({ request_id: requestId }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as any).name === 'AbortError') {
+      throw new Error(`[faceswap] Status API timeout after 60s`);
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const text = await response.text();

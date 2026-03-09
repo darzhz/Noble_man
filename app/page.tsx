@@ -12,17 +12,25 @@ import SuccessStep from '@/components/steps/SuccessStep';
 import SplashScreen from '@/components/ui/SplashScreen';
 
 function AppContent() {
-  const { step } = useUploadContext();
+  const { step, setStep, setRequestId, setProcessing } = useUploadContext();
   const router = useRouter();
   const [showSplash, setShowSplash] = useState(true);
 
   // On landing, check if there's a pending requestId from a previous checkout
   useEffect(() => {
     const pendingRequestId = localStorage.getItem('noblified_request_id');
-    if (pendingRequestId) {
+    const restoreRequestId = localStorage.getItem('noblified_restore_req');
+
+    if (restoreRequestId) {
+      // Cart restore flow: trigger PreviewStep to poll and download the generation
+      localStorage.removeItem('noblified_restore_req');
+      setRequestId(restoreRequestId);
+      setStep('generating');
+    } else if (pendingRequestId) {
+      // Existing flow: hard redirect to result page
       router.replace(`/result/${pendingRequestId}`);
     }
-  }, [router]);
+  }, [router, setRequestId, setStep]);
 
   return (
     <AnimatePresence mode="wait">

@@ -1,11 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useUploadContext, type UploadStep } from '@/lib/uploadContext';
 import { Menu, User, PawPrint } from 'lucide-react';
+import Sidebar from './Sidebar';
 
 export default function Header() {
   const { step, style, setStyle } = useUploadContext();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Breadcrumb labels
   const stepLabels = ['Upload', 'Preview Your Painting', 'Claim Your Canvas'];
@@ -58,7 +60,10 @@ export default function Header() {
             </div>
 
             {/* Hamburger - Right */}
-            <button className="p-2 hover:bg-secondary rounded-lg transition-colors">
+            <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 hover:bg-secondary rounded-lg transition-colors"
+            >
               <Menu size={20} className="text-foreground" />
             </button>
           </div>
@@ -78,6 +83,8 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
     </header>
   );
 }

@@ -315,34 +315,61 @@ export default function UploadStep() {
                   hidden: { opacity: 0 },
                   show: {
                     opacity: 1,
-                    transition: { staggerChildren: 0.15, delayChildren: 0.1 }
+                    transition: { staggerChildren: 0.2, delayChildren: 0.1 }
                   }
                 }}
-                className="flex flex-row justify-center gap-3 sm:gap-6 md:gap-8 pt-4 pb-6 md:pb-8 "
+                className="flex flex-row justify-center gap-4 sm:gap-8 md:gap-12 pt-10 pb-12"
               >
-                <motion.div variants={{ hidden: { opacity: 0, scale: 0.8, y: 10 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 100 } } }} className="flex flex-col items-center text-center space-y-2 md:space-y-4 flex-1 max-w-[100px] sm:max-w-[140px] md:max-w-none">
-                  <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-lg border-2 border-border/50 group">
-                    <img src="/upload.jpeg" alt="Upload Step" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    <div className="absolute top-1 left-1 md:top-2 md:left-2 bg-background/90 backdrop-blur-md w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold font-serif text-primary shadow-sm border border-border/50 text-[10px] md:text-base">1</div>
-                  </div>
-                  <h3 className="font-bold text-xs sm:text-sm md:text-lg text-foreground leading-tight">Upload<br className="md:hidden" /> Photo</h3>
-                </motion.div>
+                {[
+                  { step: "I", title: "The Selection", sub: "Upload Photo", img: "/upload.jpeg" },
+                  { step: "II", title: "The Vision", sub: "Digital Preview", img: "/preview.jpeg" },
+                  { step: "III", title: "The Creation", sub: "Hand Painted", img: "/painted.jpeg" }
+                ].map((item, index) => (
+                  <motion.div
+                    key={index}
+                    variants={{
+                      hidden: { opacity: 0, y: 30 },
+                      show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
+                    }}
+                    className="flex flex-col items-center text-center group flex-1 max-w-[110px] sm:max-w-[160px] md:max-w-[280px]"
+                  >
+                    {/* The Frame: Architectural & Sharp */}
+                    <div className="relative mb-8 transition-transform duration-700 group-hover:-translate-y-2 rounded-md">
+                      {/* Layered Accent Border (The "Matting") */}
+                      <div className="absolute -inset-2 border border-accent/30 scale-95 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-100" />
 
-                <motion.div variants={{ hidden: { opacity: 0, scale: 0.8, y: 10 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 100 } } }} className="flex flex-col items-center text-center space-y-2 md:space-y-4 flex-1 max-w-[100px] sm:max-w-[140px] md:max-w-none">
-                  <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-lg border-2 border-border/50 group">
-                    <img src="/preview.jpeg" alt="Preview Step" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    <div className="absolute top-1 left-1 md:top-2 md:left-2 bg-background/90 backdrop-blur-md w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold font-serif text-primary shadow-sm border border-border/50 text-[10px] md:text-base">2</div>
-                  </div>
-                  <h3 className="font-bold text-xs sm:text-sm md:text-lg text-foreground leading-tight">Digital<br className="md:hidden" /> Preview</h3>
-                </motion.div>
+                      <div className=" rounded-md relative w-24 h-32 sm:w-40 sm:h-52 md:w-64 md:h-80 bg-muted overflow-hidden border border-border shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                        <img
+                          src={item.img}
+                          alt={item.title}
+                          className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
+                        />
 
-                <motion.div variants={{ hidden: { opacity: 0, scale: 0.8, y: 10 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: "spring", stiffness: 100 } } }} className="flex flex-col items-center text-center space-y-2 md:space-y-4 flex-1 max-w-[100px] sm:max-w-[140px] md:max-w-none">
-                  <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-lg border-2 border-border/50 group">
-                    <img src="/painted.jpeg" alt="Painted Step" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    <div className="absolute top-1 left-1 md:top-2 md:left-2 bg-background/90 backdrop-blur-md w-5 h-5 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold font-serif text-primary shadow-sm border border-border/50 text-[10px] md:text-base">3</div>
-                  </div>
-                  <h3 className="font-bold text-xs sm:text-sm md:text-lg text-foreground leading-tight">Hand<br className="md:hidden" /> Painted</h3>
-                </motion.div>
+                        {/* Elegant Vignette Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-20 transition-opacity duration-700" />
+
+                        {/* Roman Numeral Label */}
+                        <div className="absolute bottom-0 right-0 bg-primary px-3 py-1 md:px-5 md:py-2 text-primary-foreground font-serif text-[10px] md:text-sm tracking-[0.3em]">
+                          {item.step}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Typography: Noble Serif Hierarchy */}
+                    <div className="space-y-2 px-2">
+                      <h4 className="uppercase tracking-[0.25em] text-[7px] md:text-[10px] text-accent font-medium">
+                        Phase {item.step}
+                      </h4>
+                      <h3 className="font-serif text-sm sm:text-xl md:text-3xl text-foreground font-light leading-none">
+                        {item.title}
+                      </h3>
+                      <div className="h-px w-6 bg-border mx-auto my-3 group-hover:w-16 transition-all duration-700" />
+                      <p className="text-[9px] md:text-[11px] text-muted-foreground uppercase tracking-[0.15em] font-sans">
+                        {item.sub}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
             )}
           </AnimatePresence>

@@ -1,6 +1,6 @@
 import Header from '@/components/header/Header';
 import { UploadProvider } from '@/lib/uploadContext';
-import { Mail, MessageSquare, Phone } from 'lucide-react';
+import { Mail, MessageSquare } from 'lucide-react';
 
 export default function SupportPage() {
   return (
@@ -13,34 +13,23 @@ export default function SupportPage() {
             Our royal advisors await your correspondence.
           </p>
 
-          <div className="grid md:grid-cols-2 gap-6 mt-12 mb-16 max-w-3xl mx-auto">
+          <div className="flex justify-center mt-12 mb-16 max-w-3xl mx-auto">
             {/* Email Support */}
-            <div className="p-6 rounded-2xl border border-border bg-card flex flex-col items-center text-center">
+            <div className="p-6 rounded-2xl border border-border bg-card flex flex-col items-center text-center max-w-sm w-full">
               <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                 <Mail className="w-6 h-6 text-primary" />
               </div>
               <h3 className="font-serif text-xl font-bold mb-2">Email Us</h3>
               <p className="text-muted-foreground text-sm mb-4 flex-grow">
-                For order inquiries, custom requests, and general questions. We aim to respond within 24 hours.
+                For order inquiries, custom requests, and general questions.
+                <br />
+                We aim to respond within 24 hours.
               </p>
               <a href="mailto:admin@nobilified.com" className="text-primary font-medium hover:underline text-sm">
                 admin@nobilified.com
               </a>
             </div>
 
-            {/* Phone Support (Placeholder) */}
-            <div className="p-6 rounded-2xl border border-border bg-card flex flex-col items-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <Phone className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-serif text-xl font-bold mb-2">Call Us</h3>
-              <p className="text-muted-foreground text-sm mb-4 flex-grow">
-                Need immediate assistance? Speak to our support team directly over the phone.
-              </p>
-              <a href="tel:+18001234567" className="text-primary font-medium hover:underline text-sm">
-                +91 (701) 215 4010
-              </a>
-            </div>
           </div>
 
           <div className="max-w-2xl mx-auto bg-muted/30 p-8 rounded-2xl border border-border text-left">

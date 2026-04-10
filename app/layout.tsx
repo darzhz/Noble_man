@@ -14,21 +14,9 @@ export const metadata: Metadata = {
   description: 'Become a timeless masterpiece. Upload your photo and get an instant AI-generated 18th-century oil portrait. Download digital or order a hand-painted print.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: '/icon-light-32x32.png',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: '/icon-dark-32x32.png',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: '/apple-icon.png',
+    icon: '/nobilified_favicon.png',
+    shortcut: '/nobilified_favicon.png',
+    apple: '/nobilified_favicon.png',
   },
 }
 

@@ -1,7 +1,12 @@
 import React from 'react';
 import './illustration.css';
 
-export default function IllustrationBlock() {
+interface IllustrationBlockProps {
+  onBuyDigital?: () => void;
+  onBuyCanvas?: () => void;
+}
+
+export default function IllustrationBlock({ onBuyDigital, onBuyCanvas }: IllustrationBlockProps) {
   return (
     <div className="nob-block bg-background">
       <p className="section-eyebrow">See the difference</p>
@@ -28,7 +33,7 @@ export default function IllustrationBlock() {
           <div className="panel-label">
             <div className="panel-title">Digital download</div>
             <div className="panel-sub">Instant &middot; watermark-free</div>
-            <span className="price-pill price-left">$20</span>
+            <button onClick={onBuyDigital} className="price-pill price-left hover:scale-105 transition-transform cursor-pointer">$20</button>
           </div>
         </div>
 
@@ -45,7 +50,7 @@ export default function IllustrationBlock() {
           <div className="panel-label">
             <div className="panel-title">Master Canvas</div>
             <div className="panel-sub">100% Hand-painted art</div>
-            <span className="price-pill price-right">From $300</span>
+            <button onClick={onBuyCanvas} className="price-pill price-right hover:scale-105 transition-transform cursor-pointer">From $299</button>
           </div>
         </div>
       </div>

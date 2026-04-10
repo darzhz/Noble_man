@@ -13,8 +13,8 @@ const MAX_FILE_SIZE_MB = 10;
 
 const GALLERY_CONTENT: Record<string, { step: string; title: string; sub: string; img: string }[]> = {
   'Pet Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/pet1.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/pet3.jpeg" }
+    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/pet_cat.jpeg" },
+    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/pet_dog.jpeg" }
   ],
   'Family Portraits': [
     { step: "I", title: "The Selection", sub: "Upload Photo", img: "/family1.jpeg" },
@@ -29,8 +29,8 @@ const GALLERY_CONTENT: Record<string, { step: string; title: string; sub: string
     { step: "II", title: "The Creation", sub: "Hand Painted", img: "/couple3.jpeg" }
   ],
   'Self-Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/human3.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/preview.jpeg" }
+    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/human_asian_girl.jpeg" },
+    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/human_child_and_cat.jpeg" }
   ]
 };
 
@@ -157,7 +157,7 @@ export default function UploadStep() {
         return;
       }
 
-      if (limitStatus && limitStatus.daily_used > 1 && !customerEmail) {
+      if (limitStatus && limitStatus.daily_used >= 1 && !customerEmail) {
         setIsEmailPromptOpen(true);
         return;
       }

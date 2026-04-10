@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useUploadContext, type SelectedProductType } from '@/lib/uploadContext';
-import { AlertCircle, Check, Loader2, ChevronLeft, Download, Lock, Heart, Truck, Frame } from 'lucide-react';
+import { AlertCircle, Check, Loader2, ChevronLeft, Download, Lock, Heart, Frame } from 'lucide-react';
 
 
 export default function CheckoutModal() {
@@ -24,7 +24,7 @@ export default function CheckoutModal() {
         id: 'canvas_classic',
         label: 'Classic Canvas',
         sublabel: '16x20in - Standard premium size',
-        price: 300,
+        price: 299,
         icon: Frame,
       },
       {
@@ -314,7 +314,7 @@ export default function CheckoutModal() {
         >
           <p><Lock className="w-4 h-4 flex-shrink-0 inline" /> Secure checkout powered by Shopify</p>
           <p><Heart className="w-4 h-4 flex-shrink-0 inline" /> Digital download emailed instantly after purchase</p>
-          <p><Truck className="w-4 h-4 flex-shrink-0 inline" /> Prints ship within 3–5 business days</p>
+
         </motion.div>
       </div>
     </motion.div>

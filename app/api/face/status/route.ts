@@ -18,9 +18,13 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: result });
     } catch (error) {
         console.error('[API] Face swap status error:', error);
+        const message = error instanceof Error ? error.message : 'Failed to get status';
+        // Return 422 for backend errors (e.g. expired/unknown request) so the client
+        // treats them as hard failures instead of retrying for minutes as transient 500s.
+        const status = message.includes('timeout') ? 504 : 422;
         return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'Failed to get status' },
-            { status: 500 }
+            { error: message },
+            { status }
         );
     }
 }

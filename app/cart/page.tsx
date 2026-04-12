@@ -5,7 +5,7 @@ import Header from '@/components/header/Header';
 import { motion } from 'framer-motion';
 import { UploadProvider } from '@/lib/uploadContext';
 import { useRouter } from 'next/navigation';
-import { ImagePlus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { ImagePlus, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CartPage() {
@@ -23,8 +23,38 @@ export default function CartPage() {
     }
   }, []);
 
-  const handleRestore = (id: string) => {
-    localStorage.setItem('noblified_restore_req', id);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const handleRestore = async (item: any) => {
+    setRestoringId(item.id);
+
+    let imageUrl = item.imageUrl;
+
+    // If no cached image URL, try to fetch it from the backend first
+    if (!imageUrl) {
+      try {
+        const res = await fetch('/api/face/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ request_id: item.id }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const msg = data.message;
+          if (msg?.status === 'Completed') {
+            const img = msg.images?.find((i: any) => i.status === 'Completed');
+            imageUrl = img?.image_data_url || msg.image_data_url || '';
+          }
+        }
+      } catch {
+        // Fall through — restore flow will poll
+      }
+    }
+
+    localStorage.setItem('noblified_restore_req', item.id);
+    if (imageUrl) {
+      localStorage.setItem('noblified_restore_url', imageUrl);
+    }
     router.push('/');
   };
 
@@ -65,13 +95,20 @@ export default function CartPage() {
               {cartItems.map((item) => (
                 <div key={item.id} className="bg-card border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
                   <div className="aspect-[4/5] bg-muted relative">
-                    <img 
-                      src={item.imageUrl} 
-                      alt="Portrait generation"
-                      className="w-full h-full object-cover"
-                    />
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt="Portrait generation"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-secondary/30 text-muted-foreground text-center space-y-2">
+                        <ImagePlus className="w-8 h-8 opacity-50" />
+                        <span className="text-xs font-medium uppercase tracking-wider">Preview Unavailable Offline</span>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-background/20 backdrop-blur-[2px] opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                       <span className="bg-background/90 text-foreground px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-sm">Preview</span>
+                      <span className="bg-background/90 text-foreground px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest shadow-sm">Preview</span>
                     </div>
                   </div>
                   <div className="p-4 flex flex-col gap-4 flex-1">
@@ -86,11 +123,15 @@ export default function CartPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleRestore(item.id)}
-                      className="mt-auto w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 py-3 rounded-lg font-bold transition-colors"
+                      onClick={() => handleRestore(item)}
+                      disabled={restoringId === item.id}
+                      className="mt-auto w-full flex items-center justify-center gap-2 bg-secondary text-secondary-foreground hover:bg-secondary/80 py-3 rounded-lg font-bold transition-colors disabled:opacity-50"
                     >
-                      View & Buy
-                      <ArrowRight className="w-4 h-4" />
+                      {restoringId === item.id ? (
+                        <><Loader2 className="w-4 h-4 animate-spin" /> Loading...</>
+                      ) : (
+                        <><span>View & Buy</span><ArrowRight className="w-4 h-4" /></>
+                      )}
                     </button>
                   </div>
                 </div>

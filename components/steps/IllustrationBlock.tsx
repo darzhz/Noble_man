@@ -1,4 +1,7 @@
+'use client';
+
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import './illustration.css';
 
 interface IllustrationBlockProps {
@@ -7,11 +10,13 @@ interface IllustrationBlockProps {
 }
 
 export default function IllustrationBlock({ onBuyDigital, onBuyCanvas }: IllustrationBlockProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="nob-block bg-background">
-      <p className="section-eyebrow">See the difference</p>
-      <h2 className="section-headline">Don't Just Save It. Immortalize It.</h2>
-      <p className="section-sub">Pixels are temporary. Oil paint lasts centuries.</p>
+      <p className="section-eyebrow">{t('illustration_eyebrow')}</p>
+      <h2 className="section-headline">{t('illustration_headline')}</h2>
+      <p className="section-sub">{t('illustration_sub')}</p>
 
       <div className="vs-row">
         {/* Left: Digital */}
@@ -29,11 +34,11 @@ export default function IllustrationBlock({ onBuyDigital, onBuyCanvas }: Illustr
               </div>
             </div>
           </div>
-          <span className="img-badge badge-digital">AI preview</span>
+          <span className="img-badge badge-digital">{t('illustration_badge_digital')}</span>
           <div className="panel-label">
-            <div className="panel-title">Digital download</div>
-            <div className="panel-sub">Instant &middot; watermark-free</div>
-            <button onClick={onBuyDigital} className="price-pill price-left hover:scale-105 transition-transform cursor-pointer">$20</button>
+            <div className="panel-title">{t('illustration_digital_title')}</div>
+            <div className="panel-sub">{t('illustration_digital_sub')}</div>
+            <button onClick={onBuyDigital} className="price-pill price-left hover:scale-105 transition-transform cursor-pointer">{t('preview_digital_price')}</button>
           </div>
         </div>
 
@@ -46,32 +51,31 @@ export default function IllustrationBlock({ onBuyDigital, onBuyCanvas }: Illustr
               <img src="/royal2.jpeg" alt="Hand-painted oil canvas" />
             </div>
           </div>
-          <span className="img-badge badge-painted">Real Oil Paint</span>
+          <span className="img-badge badge-painted">{t('illustration_badge_painted')}</span>
           <div className="panel-label">
-            <div className="panel-title">Master Canvas</div>
-            <div className="panel-sub">100% Hand-painted art</div>
-            <button onClick={onBuyCanvas} className="price-pill price-right hover:scale-105 transition-transform cursor-pointer">From $299</button>
+            <div className="panel-title">{t('illustration_canvas_title')}</div>
+            <div className="panel-sub">{t('illustration_canvas_sub')}</div>
+            <button onClick={onBuyCanvas} className="price-pill price-right hover:scale-105 transition-transform cursor-pointer">{t('preview_canvas_price')}</button>
           </div>
         </div>
       </div>
 
       <div className="proof-strip">
-        <div className="proof-stat">✓ Museum-grade materials</div>
-        <div className="proof-text">Real artists. Real canvas. Ships ready to hang.</div>
+        <div className="proof-stat">{t('illustration_proof_stat')}</div>
+        <div className="proof-text">{t('illustration_proof_text')}</div>
       </div>
 
       <hr className="section-divider" />
 
       {/* CELEBRITY STRIP */}
-      <p className="celeb-eyebrow">A few familiar faces</p>
-      <h2 className="celeb-headline">We've Painted Some People You Might Recognize.</h2>
-      <p className="celeb-sub">Over 10,000 portraits and counting — including a few celebrities
-        who commissioned us to immortalize them in style.</p>
+      <p className="celeb-eyebrow">{t('illustration_celeb_eyebrow')}</p>
+      <h2 className="celeb-headline">{t('illustration_celeb_headline')}</h2>
+      <p className="celeb-sub">{t('illustration_celeb_sub')}</p>
 
       <div className="celeb-img-wrap">
         <img src="/royal1.jpeg" alt="Celebrity holding their Nobilified portrait" />
       </div>
-      <p className="celeb-caption">"The Backstreet Boys. All five. Each one a hand-painted oil masterpiece."</p>
+      <p className="celeb-caption">{t('illustration_celeb_caption')}</p>
 
     </div>
   );

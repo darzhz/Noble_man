@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useUploadContext } from '@/lib/uploadContext';
 import { blobToDataUrl } from '@/lib/watermark';
-import { ChevronLeft, Loader2, Download, Printer, Frame, Check, Sparkles, Paintbrush, Landmark, Crown } from 'lucide-react';
+import { ChevronLeft, Loader2, Download, Printer, Frame, Check, Sparkles, Paintbrush, Landmark, Crown, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import IllustrationBlock from './IllustrationBlock';
 
@@ -26,14 +26,26 @@ const PROCESS_MESSAGES = [
   "Digital files to print at home for Peasants.",
   "Paintings take 3-5 days to complete, time to dry, frame and ship.",
   "Wait about a month.",
-  "The digital preview. That should be done now.",
   "Enjoy the art and do not forget to share with friends and family."
+];
+
+const LOADING_IMAGES = [
+  "/loading/loading-bond.jpg",
+  "/loading/loading-cityline.jpg",
+  "/loading/loading-couple.jpg",
+  "/loading/loading-dog.jpg",
+  "/loading/loading-ellen.jpg",
+  "/loading/loading-gothic.jpg",
+  "/loading/loading-logan_paul.jpg",
+  "/loading/loading-mand_and_dog.jpg",
+  "/loading/loading-soldier.jpg",
 ];
 
 export default function PreviewStep() {
   const {
     setStep,
     uploadedImages,
+    setUploadedImages,
     promptTemplate,
     setGeneratedImage,
     generatedImage,
@@ -110,34 +122,56 @@ export default function PreviewStep() {
   ];
 
   // Helper: compress File to base64 and strip the data URL prefix
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        const MAX_DIM = 1200;
-        let { width, height } = img;
-        if (width > height) {
-          if (width > MAX_DIM) {
-            height = Math.round(height * (MAX_DIM / width));
-            width = MAX_DIM;
-          }
-        } else {
-          if (height > MAX_DIM) {
-            width = Math.round(width * (MAX_DIM / height));
-            height = MAX_DIM;
-          }
+  // Includes automatic retry (up to 3 attempts) for transient FileReader failures
+  const fileToBase64 = async (file: File, attempt = 1): Promise<string> => {
+    const MAX_ATTEMPTS = 3;
+    const RETRY_DELAY_MS = 500;
+
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        if (!file) {
+          return reject(new Error('Invalid file provided for compression.'));
         }
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-        resolve(dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl);
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const MAX_DIM = 1200;
+            let { width, height } = img;
+            if (width > height) {
+              if (width > MAX_DIM) {
+                height = Math.round(height * (MAX_DIM / width));
+                width = MAX_DIM;
+              }
+            } else {
+              if (height > MAX_DIM) {
+                width = Math.round(width * (MAX_DIM / height));
+                height = MAX_DIM;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx?.drawImage(img, 0, 0, width, height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            resolve(dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl);
+          };
+          img.onerror = () => reject(new Error('Image format not supported by browser.'));
+          img.src = e.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error('FileReader failed to read file data.'));
+        reader.readAsDataURL(file);
+      });
+    } catch (err) {
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(`[PreviewStep] fileToBase64 attempt ${attempt} failed, retrying in ${RETRY_DELAY_MS}ms...`, err);
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+        return fileToBase64(file, attempt + 1);
+      }
+      throw err;
+    }
   };
 
   const pollStatus = useCallback(async (reqId: string) => {
@@ -192,28 +226,52 @@ export default function PreviewStep() {
 
         setGeneratedImageUrl(imageDataUrl);
         setStatusMessage('Finishing up...');
-        const imgResponse = await fetch(imageDataUrl);
-        const imgBlob = await imgResponse.blob();
-        setGeneratedImage(imgBlob);
-        setWatermarkedImage(imgBlob);
+        try {
+          const imgResponse = await fetch(imageDataUrl);
+          if (imgResponse.ok) {
+            const imgBlob = await imgResponse.blob();
+            setGeneratedImage(imgBlob);
+            setWatermarkedImage(imgBlob);
+          }
+        } catch (e) {
+          console.warn('[PreviewStep] Could not fetch blob due to CORS. Proceeding with URL string safely.');
+        }
         setPreviewUrl(imageDataUrl);
 
-        // Save to cart local storage gracefully (prevent QUOTA_EXCEEDED errors from base64 strings)
+        // Save to cart — compress to a tiny thumbnail to avoid blowing up localStorage
         try {
-          const newGen = { id: reqId, imageUrl: imageDataUrl, date: new Date().toISOString() };
+          let thumbUrl = imageDataUrl;
+          // If it's a large data URL, create a small JPEG thumbnail
+          if (imageDataUrl?.startsWith('data:')) {
+            try {
+              thumbUrl = await new Promise<string>((resolve) => {
+                const thumbImg = new Image();
+                thumbImg.onload = () => {
+                  const c = document.createElement('canvas');
+                  const MAX = 150;
+                  let w = thumbImg.width, h = thumbImg.height;
+                  if (w > h) { h = Math.round(h * (MAX / w)); w = MAX; }
+                  else { w = Math.round(w * (MAX / h)); h = MAX; }
+                  c.width = w; c.height = h;
+                  c.getContext('2d')?.drawImage(thumbImg, 0, 0, w, h);
+                  resolve(c.toDataURL('image/jpeg', 0.5));
+                };
+                thumbImg.onerror = () => resolve('');
+                thumbImg.src = imageDataUrl;
+              });
+            } catch { thumbUrl = ''; }
+          }
+          const newGen = { id: reqId, imageUrl: thumbUrl || '', date: new Date().toISOString() };
           let history = JSON.parse(localStorage.getItem('nobilified_cart') || '[]');
 
           if (!history.some((h: any) => h.id === reqId)) {
-            // Keep history small to begin with
             history = [newGen, ...history].slice(0, 5);
             try {
               localStorage.setItem('nobilified_cart', JSON.stringify(history));
-            } catch (e: any) {
-              // If it's a DOMException QuotaExceededError, try discarding the image strings and just save the reqIds
-              if (e.name === 'QuotaExceededError') {
-                const lightweightHistory = history.map((item: any) => ({ ...item, imageUrl: item.imageUrl?.startsWith('data:') ? '' : item.imageUrl }));
-                localStorage.setItem('nobilified_cart', JSON.stringify(lightweightHistory));
-              }
+            } catch {
+              // Quota exceeded — strip thumbnails and save just the IDs
+              const lightweight = history.map((item: any) => ({ ...item, imageUrl: '' }));
+              localStorage.setItem('nobilified_cart', JSON.stringify(lightweight));
             }
           }
         } catch (e) {
@@ -230,10 +288,8 @@ export default function PreviewStep() {
         return;
       }
 
-      if (status === 'Processing') {
+      if (status === 'Processing' || status === 'Queued') {
         // Do nothing, let the 3.5s interval continuously handle the story texts
-      } else if (status === 'Queued') {
-        setStatusMessage('Waiting in queue...');
       }
       pollTimerRef.current = setTimeout(() => pollStatus(reqId), POLL_INTERVAL_MS);
     } catch (err: any) {
@@ -259,6 +315,40 @@ export default function PreviewStep() {
       if (requestId && (!uploadedImages || uploadedImages.length === 0) && !isSubmittedRef.current) {
         isSubmittedRef.current = true;
         setProcessing(true);
+
+        const cachedUrl = localStorage.getItem('noblified_restore_url_tmp');
+        if (cachedUrl) {
+          localStorage.removeItem('noblified_restore_url_tmp');
+        }
+
+        // Show cached preview immediately if available, then try to fetch all images in background
+        if (cachedUrl) {
+          setPreviewUrl(cachedUrl);
+          setProcessing(false);
+          setStep('preview');
+
+          // Background fetch to populate all images
+          fetch('/api/face/status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ request_id: requestId }),
+          })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+              const images = data?.message?.images;
+              if (images && images.length > 0) {
+                setGeneratedImagesData(images);
+                const firstCompleted = images.find((img: any) => img.status === 'Completed');
+                if (firstCompleted?.image_data_url) {
+                  setGeneratedImageUrl(firstCompleted.image_data_url);
+                  setPreviewUrl(firstCompleted.image_data_url);
+                }
+              }
+            })
+            .catch(() => { /* keep showing the single cached image */ });
+          return;
+        }
+
         setStatusMessage('Restoring masterpiece...');
         pollCountRef.current = 0;
         pollTimerRef.current = setTimeout(() => pollStatus(requestId), 0);
@@ -280,8 +370,20 @@ export default function PreviewStep() {
         setProcessing(true);
         setError(null);
 
-        // Convert all images to base64
-        const base64Images = await Promise.all(uploadedImages.map(fileToBase64));
+        // Convert all images to base64 — if files are unreadable (detached memory),
+        // gracefully bounce user back to re-upload instead of crashing
+        let base64Images: string[];
+        try {
+          base64Images = await Promise.all(uploadedImages.map(fileToBase64));
+        } catch (fileErr) {
+          console.warn('[PreviewStep] File objects are unreadable (likely detached by browser navigation). Bouncing to upload.', fileErr);
+          isSubmittedRef.current = false;
+          setProcessing(false);
+          setUploadedImages([]);
+          setError('Your photos could not be read. Please re-select your images and try again.');
+          setStep('upload');
+          return;
+        }
         const userId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
 
         const payload: any = {
@@ -331,7 +433,6 @@ export default function PreviewStep() {
         const reqId = data.message?.request_id;
         if (!reqId) throw new Error('No request_id returned from API');
         setRequestId(reqId);
-        setStatusMessage('Waiting in queue...');
         pollCountRef.current = 0;
         pollTimerRef.current = setTimeout(() => pollStatus(reqId), POLL_INTERVAL_MS);
       } catch (err) {
@@ -341,7 +442,9 @@ export default function PreviewStep() {
       }
     };
     submitImage();
-    return () => { if (pollTimerRef.current) clearTimeout(pollTimerRef.current); };
+    return () => {
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
+    };
   }, [uploadedImages, promptTemplate, setProcessing, setError, setRequestId, pollStatus]);
 
   // Cycle through messages every few seconds while processing
@@ -371,8 +474,9 @@ export default function PreviewStep() {
     if (processing && !previewUrl) {
       progressInterval = setInterval(() => {
         setProgress(p => {
-          if (p < 85) return p + 1;
-          if (p < 99) return p + 0.2;
+          if (p < 80) return p + 4;
+          if (p < 95) return p + 0.5;
+          if (p < 99) return p + 0.1;
           return p;
         });
       }, 400);
@@ -417,26 +521,55 @@ export default function PreviewStep() {
 
   if (processing && !previewUrl) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-background flex flex-col items-center justify-start pt-8 md:pt-12 p-4">
         <div className="w-full max-w-lg space-y-8">
           <div className="text-center space-y-4">
             <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground">{t('preview_creating_title')}</h2>
-            <div className="h-24 flex items-center justify-center">
-              <p className="text-muted-foreground text-lg text-center leading-relaxed font-medium px-4">{statusMessage}</p>
-            </div>
-          </div>
 
-          <div className="space-y-3 px-8">
-            <div className="flex justify-between text-sm font-medium text-foreground">
-              <span>Crafting your masterpiece...</span>
-              <span>{Math.floor(progress)}%</span>
+            <div className="h-56 sm:h-72 w-full relative flex items-center justify-center bg-transparent my-4">
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={messageIndex % LOADING_IMAGES.length}
+                  src={LOADING_IMAGES[messageIndex % LOADING_IMAGES.length]}
+                  alt="Nobilified Past Example"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.05 }}
+                  transition={{ duration: 1 }}
+                  className="absolute inset-0 m-auto max-h-full max-w-full object-contain border-4 sm:border-[6px] border-border shadow-2xl rounded-md bg-muted"
+                />
+              </AnimatePresence>
             </div>
-            <div className="h-3 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner">
-              <motion.div
-                className="h-full bg-primary"
-                style={{ width: `${progress}%` }}
-                layout
-              />
+
+            <div className="space-y-3 px-8 w-full mt-4">
+              <div className="flex justify-between text-sm font-medium text-foreground">
+                <span>{t('preview_loading_progress')}</span>
+                <span>{Math.floor(progress)}%</span>
+              </div>
+              <div className="h-3 w-full bg-secondary/50 rounded-full overflow-hidden shadow-inner">
+                <motion.div
+                  className="h-full bg-primary"
+                  style={{ width: `${progress}%` }}
+                  layout
+                />
+              </div>
+            </div>
+
+            <div className="h-16 flex items-center justify-center pt-2 relative overflow-hidden w-full">
+              <AnimatePresence mode="popLayout">
+                <motion.div
+                  key={statusMessage}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                  className="absolute w-full flex justify-center"
+                >
+                  <p className="text-foreground md:text-lg text-center leading-relaxed font-medium px-4">
+                    {statusMessage}
+                  </p>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
 
@@ -446,8 +579,8 @@ export default function PreviewStep() {
             transition={{ delay: 3, duration: 1 }}
             className="mt-12 pt-8 border-t border-border mx-auto max-w-sm text-center text-sm"
           >
-            <p className="font-serif italic text-primary mb-2">Hand-Painted Masterpieces Since 2013</p>
-            <p className="text-muted-foreground text-xs">For over ten years, we’ve been turning everyday humans and exceptionally good pets into historical royalty.</p>
+            <p className="font-serif italic text-primary mb-2">{t('preview_loading_tagline')}</p>
+            <p className="text-muted-foreground text-xs">{t('preview_loading_tagline_desc')}</p>
           </motion.div>
         </div>
       </motion.div>
@@ -459,7 +592,7 @@ export default function PreviewStep() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-background py-12 px-4 md:px-8"
+      className="min-h-screen bg-background py-12 px-4 md:px-8 pb-28 lg:pb-12"
     >
       <div className="max-w-5xl mx-auto space-y-12">
         {/* Header Area */}
@@ -470,7 +603,7 @@ export default function PreviewStep() {
           </button>
           <div className="flex items-center gap-2 text-primary text-sm font-semibold italic">
             <Sparkles className="w-4 h-4" />
-            ✶ Your Royal Portrait Is Ready
+            {t('preview_portrait_ready')}
           </div>
         </div>
 
@@ -485,7 +618,7 @@ export default function PreviewStep() {
               transition={{ delay: 0.1 }}
               className="text-center pb-2"
             >
-              <h3 className="font-serif text-2xl font-bold text-foreground">OMG. YOU LOOK INCREDIBLE. 👑</h3>
+              <h3 className="font-serif text-2xl font-bold text-foreground">{t('preview_you_look_incredible')}</h3>
             </motion.div>
 
             <div className={`grid gap-4 ${generatedImagesData?.filter(i => i.status === 'Completed').length > 1 ? 'grid-cols-2' : 'grid-cols-1'} overflow-y-auto max-h-[60vh] lg:max-h-[calc(100vh-16rem)] pr-2`}>
@@ -534,9 +667,32 @@ export default function PreviewStep() {
               )}
             </div>
 
-            <div className="w-full flex flex-col items-center justify-center gap-1 text-xs uppercase tracking-widest text-muted-foreground bg-secondary/30 rounded-2xl py-3 border border-border mt-4 text-center">
-              <span>PREVIEW MODE: <span className="text-foreground font-bold">WATERMARKED</span></span>
-              <span className="text-[10px]">(PURCHASE TO REMOVE)</span>
+            {/* Mobile: watermark notice */}
+            <div className="lg:hidden w-full flex flex-col items-center justify-center gap-1 text-xs uppercase tracking-widest text-muted-foreground bg-secondary/30 rounded-2xl py-3 border border-border mt-4 text-center">
+              <span>{t('preview_watermark_label')} <span className="text-foreground font-bold">{t('preview_watermark_value')}</span></span>
+              <span className="text-[10px]">{t('preview_watermark_hint')}</span>
+            </div>
+
+            {/* Desktop: sticky buy buttons */}
+            <div className="hidden lg:flex flex-col gap-2 mt-4">
+              <button
+                onClick={() => { setSelectedProduct('canvas_royal'); setStep('checkout'); }}
+                className="w-full py-3.5 rounded-xl font-bold text-base bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-xl flex flex-col items-center justify-center gap-1 shadow-lg transition-all hover:-translate-y-0.5"
+              >
+                <span className="flex items-center gap-2">
+                  <Crown size={20} className="text-yellow-400 shrink-0" />
+                  {t('preview_paint_my_masterpiece')}
+                </span>
+                <span className="flex items-center gap-2 text-[10px] font-normal text-primary-foreground/70">
+                  <Lock size={9} /> {t('preview_trust_badge')}
+                </span>
+              </button>
+              <button
+                onClick={() => { setSelectedProduct('digital'); setStep('checkout'); }}
+                className="w-full py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {t('preview_or_digital')}
+              </button>
             </div>
           </div>
 
@@ -544,97 +700,107 @@ export default function PreviewStep() {
           <div className="lg:col-span-7 space-y-8">
             {/* Buy Options — at the top */}
             <div className="space-y-6">
-              {/* Digital File Option */}
+              {/* Commission Canvas Option */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
-                className="group relative border-2 border-primary bg-primary/5 ring-4 ring-primary/10 rounded-xl p-6 transition-all"
+                className="group relative border-2 border-primary bg-primary/5 ring-4 ring-primary/10 rounded-xl p-4 sm:p-6 transition-all"
               >
-                <div className="absolute -top-3 right-6 bg-primary text-primary-foreground text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest shadow-md">
-                  Most Popular
+                <div className="absolute -top-3 right-4 sm:right-6 bg-primary text-primary-foreground text-[10px] sm:text-xs font-bold px-3 sm:px-4 py-1 rounded-full uppercase tracking-widest shadow-md flex items-center gap-1">
+                  <Crown size={12} />
+                  {t('preview_most_popular')}
                 </div>
 
-                <div className="flex gap-5">
-                  <div className="p-4 rounded-xl bg-primary text-primary-foreground h-fit shadow-inner">
-                    <Download size={32} />
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+                  <div className="p-3 sm:p-4 rounded-xl bg-primary text-primary-foreground h-fit w-fit shadow-inner">
+                    <Frame size={24} className="sm:hidden" />
+                    <Frame size={32} className="hidden sm:block" />
                   </div>
 
-                  <div className="flex-1 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-border/50 pb-4 gap-2 sm:gap-0">
-                      <div>
-                        <h4 className="font-serif font-bold text-xl sm:text-2xl text-foreground">High-Res Digital Masterpiece</h4>
-                        <p className="text-sm font-medium text-muted-foreground mt-1">Ready to download instantly</p>
+                  <div className="flex-1 min-w-0 space-y-4">
+                    <div className="flex flex-col xl:flex-row xl:items-baseline justify-between border-b border-border/50 pb-4 gap-2 xl:gap-4 w-full overflow-hidden">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-serif font-bold text-xl sm:text-2xl text-foreground break-words whitespace-normal">{t('preview_canvas_title')}</h4>
+                        <p className="text-sm font-medium text-muted-foreground mt-1">{t('preview_canvas_sizes')}</p>
                       </div>
-                      <span className="text-2xl sm:text-3xl font-bold text-foreground">$20</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-primary whitespace-nowrap">{t('preview_canvas_price')}</span>
                     </div>
 
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <p className="flex items-start gap-2">
-                        <Check size={16} className="text-primary mt-0.5 shrink-0" />
-                        <span>High-resolution, completely <strong className="text-foreground">watermark-free</strong>.</span>
+                    <div className="space-y-3 text-sm text-muted-foreground pt-2">
+                      <p className="flex items-start gap-3">
+                        <Check size={18} className="text-primary mt-0.5 shrink-0" />
+                        <span><strong className="text-foreground">{t('preview_canvas_benefit_1_bold')}</strong> {t('preview_canvas_benefit_1')}</span>
                       </p>
-                      <p className="flex items-start gap-2">
-                        <Check size={16} className="text-primary mt-0.5 shrink-0" />
-                        <span>Perfect for <strong className="text-foreground">social media</strong> or your own printing.</span>
+                      <p className="flex items-start gap-3">
+                        <Check size={18} className="text-primary mt-0.5 shrink-0" />
+                        <span><strong className="text-foreground">{t('preview_canvas_benefit_2_bold')}</strong> {t('preview_canvas_benefit_2')}</span>
                       </p>
+                      <p className="flex items-start gap-3">
+                        <Check size={18} className="text-primary mt-0.5 shrink-0" />
+                        <span><strong className="text-foreground">{t('preview_canvas_benefit_3_bold')}</strong> {t('preview_canvas_benefit_3')}</span>
+                      </p>
+
+                      <div className="flex items-start gap-3 bg-card border border-primary/20 p-4 rounded-xl mt-4 shadow-sm">
+                        <span className="text-2xl shrink-0 mt-1 drop-shadow-sm">🎨</span>
+                        <div className="space-y-1">
+                          <strong className="text-foreground block font-bold text-[15px]">{t('preview_canvas_process_title')}</strong>
+                          <span className="text-muted-foreground inline-block leading-relaxed" dangerouslySetInnerHTML={{ __html: t('preview_canvas_process_desc') }} />
+                        </div>
+                      </div>
                     </div>
 
                     <button
-                      onClick={() => { setSelectedProduct('digital'); setStep('checkout'); }}
-                      className="w-full mt-2 py-4 rounded-lg font-bold text-base transition-all bg-primary text-primary-foreground hover:shadow-xl hover:bg-primary/90"
+                      onClick={() => { setSelectedProduct('canvas_royal'); setStep('checkout'); }}
+                      className="w-full mt-6 py-4 sm:py-5 px-2 rounded-xl font-bold text-base sm:text-lg transition-all bg-primary text-primary-foreground hover:shadow-xl hover:bg-primary/90 flex flex-row items-center justify-center gap-2 transform hover:-translate-y-0.5 mx-auto sm:w-full max-w-sm sm:max-w-none"
                     >
-                      <span className="flex flex-col sm:flex-row items-center justify-center sm:gap-1">
-                        <span>Download My Portrait Bundle</span>
-                        <span className="hidden sm:inline">-</span>
-                        <span>$20</span>
-                      </span>
+                      <Crown size={22} className="text-yellow-400 shrink-0" />
+                      <span className="leading-tight">{t('preview_paint_my_masterpiece')}</span>
                     </button>
                   </div>
                 </div>
               </motion.div>
 
-              {/* Commission Canvas Option */}
+              {/* Digital File Option */}
               <motion.div
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.4 }}
-                className="group relative border-2 border-border bg-card rounded-xl p-6 transition-all hover:border-primary/50"
+                className="group relative border-2 border-border bg-card rounded-xl p-4 sm:p-6 transition-all hover:border-primary/50"
               >
-                <div className="absolute -top-3 right-6 bg-muted text-muted-foreground text-xs font-bold px-4 py-1 rounded-full uppercase tracking-widest border border-border">
-                  Hand-Painted
-                </div>
 
-                <div className="flex gap-5">
-                  <div className="p-4 rounded-xl bg-secondary text-secondary-foreground h-fit">
-                    <Frame size={32} />
+                <div className="flex flex-col sm:flex-row gap-4 sm:gap-5">
+                  <div className="p-3 sm:p-4 rounded-xl bg-secondary text-secondary-foreground h-fit w-fit">
+                    <Download size={24} className="sm:hidden" />
+                    <Download size={32} className="hidden sm:block" />
                   </div>
 
-                  <div className="flex-1 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-baseline justify-between border-b border-border/50 pb-4 gap-2 sm:gap-0">
-                      <div>
-                        <h4 className="font-serif font-bold text-xl sm:text-2xl text-foreground">Hand-Painted Oil Canvas</h4>
-                        <p className="text-sm font-medium text-muted-foreground mt-1">3 Sizes Available</p>
+                  <div className="flex-1 min-w-0 space-y-4">
+                    <div className="flex flex-col xl:flex-row xl:items-baseline justify-between border-b border-border/50 pb-4 gap-2 xl:gap-4 w-full overflow-hidden">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-serif font-bold text-xl sm:text-2xl text-foreground break-words whitespace-normal">{t('preview_digital_title')}</h4>
+                        <p className="text-sm font-medium text-muted-foreground mt-1">{t('preview_digital_subtitle')}</p>
                       </div>
-                      <span className="text-2xl sm:text-3xl font-bold text-foreground whitespace-nowrap">From $299</span>
+                      <span className="text-2xl sm:text-3xl font-bold text-foreground whitespace-nowrap">{t('preview_digital_price')}</span>
                     </div>
 
                     <div className="space-y-2 text-sm text-muted-foreground">
                       <p className="flex items-start gap-2">
                         <Check size={16} className="text-primary mt-0.5 shrink-0" />
-                        <span>Stretched on an <strong className="text-foreground">ornate gold frame</strong>.</span>
+                        <span dangerouslySetInnerHTML={{ __html: t('preview_digital_benefit_1') }} />
                       </p>
-                      <p className="flex items-start gap-2 bg-secondary/30 p-3 rounded-lg mt-2">
-                        <span className="text-xl">🎨</span>
-                        <span><strong className="text-foreground">Please note:</strong> It takes approximately <strong className="text-foreground">4 weeks</strong> to meticulously paint, dry, frame, and ship your masterpiece.</span>
+                      <p className="flex items-start gap-2">
+                        <Check size={16} className="text-primary mt-0.5 shrink-0" />
+                        <span dangerouslySetInnerHTML={{ __html: t('preview_digital_benefit_2') }} />
                       </p>
                     </div>
 
                     <button
-                      onClick={() => { setSelectedProduct('canvas_royal'); setStep('checkout'); }}
-                      className="w-full mt-2 py-4 rounded-lg font-bold text-base transition-all bg-secondary text-secondary-foreground hover:shadow-md hover:bg-secondary/80"
+                      onClick={() => { setSelectedProduct('digital'); setStep('checkout'); }}
+                      className="w-full mt-4 py-3 sm:py-4 px-2 rounded-lg font-bold text-[14px] sm:text-base transition-all bg-secondary text-secondary-foreground hover:shadow-md hover:bg-secondary/80 border border-transparent shadow-sm flex items-center justify-center gap-2 mx-auto sm:w-full max-w-sm sm:max-w-none"
                     >
-                      Commission Canvas
+                      <Download size={18} className="shrink-0" />
+                      <span className="leading-tight">{t('preview_digital_button')}</span>
                     </button>
                   </div>
                 </div>
@@ -649,30 +815,28 @@ export default function PreviewStep() {
               <p className="text-xl text-primary font-medium italic">{t('preview_store_subtitle')}</p>
 
               <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-4">
-                <p className="text-muted-foreground leading-relaxed">
-                  You've seen the portrait. Now make it permanent... Commission one of our master artists to bring your digital concept to life. <strong className="text-foreground">100% hand-painted using authentic oil paints on premium canvas</strong>—just like the royals did it.
-                </p>
+                <p className="text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: t('preview_description') }} />
 
                 <ul className="space-y-3 pt-2">
                   <li className="flex items-start gap-3 text-sm">
                     <Paintbrush className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-foreground block">Real Art, Real Artists</strong>
-                      <span className="text-muted-foreground">No digital printing. Every brushstroke is painted by hand.</span>
+                      <strong className="text-foreground block">{t('preview_real_art_title')}</strong>
+                      <span className="text-muted-foreground">{t('preview_real_art_desc')}</span>
                     </div>
                   </li>
                   <li className="flex items-start gap-3 text-sm">
                     <Landmark className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-foreground block">Museum Quality</strong>
-                      <span className="text-muted-foreground">Rich, textured oil paints that look incredible on any wall.</span>
+                      <strong className="text-foreground block">{t('preview_museum_title')}</strong>
+                      <span className="text-muted-foreground">{t('preview_museum_desc')}</span>
                     </div>
                   </li>
                   <li className="flex items-start gap-3 text-sm">
                     <Crown className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-foreground block">The Ultimate Heirloom</strong>
-                      <span className="text-muted-foreground">A timeless conversation piece guaranteed to outlast your hard drive.</span>
+                      <strong className="text-foreground block">{t('preview_heirloom_title')}</strong>
+                      <span className="text-muted-foreground">{t('preview_heirloom_desc')}</span>
                     </div>
                   </li>
                 </ul>
@@ -691,7 +855,7 @@ export default function PreviewStep() {
                 onClick={handleBack}
                 className="w-full py-4 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors border border-dashed border-border rounded-xl"
               >
-                Not quite right? → Generate a new portrait
+                {t('preview_generate_another')}
               </button>
             </div>
           </div>
@@ -700,10 +864,10 @@ export default function PreviewStep() {
         {/* Social Proof */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-12 border-t border-border">
           {[
-            { label: 'Happy Customers', val: '10,000+' },
-            { label: 'Rating', val: '4.8★' },
-            { label: 'Secure', val: 'SSL' },
-            { label: 'Privacy', val: '100%' },
+            { label: t('preview_stat_customers'), val: '10,000+' },
+            { label: t('preview_stat_rating'), val: '4.8★' },
+            { label: t('preview_stat_secure'), val: 'SSL' },
+            { label: t('preview_stat_privacy'), val: '100%' },
           ].map((stat, i) => (
             <div key={i} className="text-center">
               <p className="text-xl font-bold text-primary">{stat.val}</p>
@@ -712,6 +876,30 @@ export default function PreviewStep() {
           ))}
         </div>
       </div>
+
+      {/* Sticky bottom bar — mobile/tablet only */}
+      {previewUrl && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-background/95 backdrop-blur-sm border-t border-border p-3 space-y-1.5">
+          <button
+            onClick={() => { setSelectedProduct('canvas_royal'); setStep('checkout'); }}
+            className="w-full py-3.5 rounded-xl font-bold text-base bg-primary text-primary-foreground hover:bg-primary/90 flex flex-col items-center justify-center gap-1 shadow-lg"
+          >
+            <span className="flex items-center gap-2">
+              <Crown size={20} className="text-yellow-400 shrink-0" />
+              {t('preview_paint_my_masterpiece')}
+            </span>
+            <span className="flex items-center gap-2 text-[10px] font-normal text-primary-foreground/70">
+              <Lock size={9} /> {t('preview_trust_badge')}
+            </span>
+          </button>
+          <button
+            onClick={() => { setSelectedProduct('digital'); setStep('checkout'); }}
+            className="w-full py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {t('preview_or_digital')}
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 }

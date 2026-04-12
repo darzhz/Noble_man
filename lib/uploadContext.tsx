@@ -75,7 +75,21 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   const [prompt, setPrompt] = useState<string>('baroque');
   const [promptTemplate, setPromptTemplate] = useState<string>('');
   const [selectedProduct, setSelectedProduct] = useState<SelectedProductType>('digital');
-  const [customerEmail, setCustomerEmail] = useState<string>('');
+  const [customerEmail, setCustomerEmailState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('nobilified_customer_email') || '';
+    }
+    return '';
+  });
+
+  const setCustomerEmail = (email: string) => {
+    setCustomerEmailState(email);
+    if (typeof window !== 'undefined') {
+      if (email) {
+        localStorage.setItem('nobilified_customer_email', email);
+      }
+    }
+  };
 
   /** Set an array of uploaded images; also keeps uploadedImage in sync */
   const setUploadedImages = (files: File[]) => {
@@ -102,7 +116,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
     setPrompt('baroque');
     setPromptTemplate('');
     setSelectedProduct('digital');
-    setCustomerEmail('');
+    // customerEmail intentionally NOT cleared — persisted across sessions via localStorage
   };
 
   const value: UploadContextType = {

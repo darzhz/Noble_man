@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUploadContext } from '@/lib/uploadContext';
-import { Upload, AlertCircle, X, ImagePlus, Settings2, Loader2, Mail } from 'lucide-react';
+import { Upload, AlertCircle, X, ImagePlus, Settings2, Loader2, Mail, Paintbrush, Crown, Landmark } from 'lucide-react';
 import CredibilitySection from '@/components/credibility/CredibilitySection';
 import StyleDrawer from './StyleDrawer';
 import { useTranslation } from 'react-i18next';
@@ -13,8 +13,8 @@ const MAX_FILE_SIZE_MB = 10;
 
 const GALLERY_CONTENT: Record<string, { step: string; title: string; sub: string; img: string }[]> = {
   'Pet Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/pet_cat.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/pet_dog.jpeg" }
+    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/pet_dog.jpeg" },
+    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/pet_cat.jpeg" }
   ],
   'Family Portraits': [
     { step: "I", title: "The Selection", sub: "Upload Photo", img: "/family1.jpeg" },
@@ -130,6 +130,16 @@ export default function UploadStep() {
 
   const [isCheckingLimit, setIsCheckingLimit] = useState(false);
 
+  // Clone File objects into memory-backed copies so they survive DOM input element GC
+  const cloneFilesIntoMemory = async (filesToClone: File[]): Promise<File[]> => {
+    return Promise.all(
+      filesToClone.map(async (f) => {
+        const buffer = await f.arrayBuffer();
+        return new File([buffer], f.name, { type: f.type, lastModified: f.lastModified });
+      })
+    );
+  };
+
   const handleSubmit = async () => {
     if (files.length === 0) {
       setError(t('upload_select_error') as string);
@@ -162,23 +172,38 @@ export default function UploadStep() {
         return;
       }
 
+      // Read file data into JS heap so File objects survive the UploadStep unmount
+      const durableFiles = await cloneFilesIntoMemory(files);
+      setUploadedImages(durableFiles);
+
       setStep('generating');
     } catch (err) {
       console.error('Rate limit check failed:', err);
-      // Fallback: continue to generating if rate limit check itself fails, 
+      // Fallback: continue to generating if rate limit check itself fails,
       // the backend process route will also enforce it.
+      try {
+        const durableFiles = await cloneFilesIntoMemory(files);
+        setUploadedImages(durableFiles);
+      } catch { /* files already in context from processFiles */ }
       setStep('generating');
     } finally {
       setIsCheckingLimit(false);
     }
   };
 
-  const handleEmailSubmit = () => {
+  const handleEmailSubmit = async () => {
     if (!emailInput || !emailInput.includes('@')) {
       return;
     }
     setCustomerEmail(emailInput);
     setIsEmailPromptOpen(false);
+
+    // Read file data into JS heap before transitioning
+    try {
+      const durableFiles = await cloneFilesIntoMemory(files);
+      setUploadedImages(durableFiles);
+    } catch { /* files already in context from processFiles */ }
+
     setStep('generating');
   };
 
@@ -456,6 +481,60 @@ export default function UploadStep() {
           </AnimatePresence>
         </motion.div>
 
+
+        {/* Who We Are Section */}
+        <div className="max-w-5xl mx-auto pt-6 md:pt-8 px-2 sm:px-4 md:px-0 border-t border-border">
+          <div className="space-y-6 md:space-y-7">
+            <div className="space-y-3 text-center max-w-3xl mx-auto">
+              <h2 className="font-serif text-3xl md:text-4xl font-bold leading-tight text-foreground">
+                {t('cred_title_1')}
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 px-1 sm:px-2 md:px-0">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="space-y-2 text-left"
+              >
+                <div className="flex items-center gap-2 text-primary">
+                  <Paintbrush className="w-5 h-5 shrink-0" />
+                  <h3 className="font-semibold text-base text-foreground leading-snug">{t('cred_title_2')}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">{t('cred_desc_2')}</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="space-y-2 text-left"
+              >
+                <div className="flex items-center gap-2 text-primary">
+                  <Crown className="w-5 h-5 shrink-0" />
+                  <h3 className="font-semibold text-base text-foreground leading-snug">{t('cred_title_3')}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">{t('cred_desc_3')}</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+                className="space-y-2 text-left"
+              >
+                <div className="flex items-center gap-2 text-primary">
+                  <Landmark className="w-5 h-5 shrink-0" />
+                  <h3 className="font-semibold text-base text-foreground leading-snug">{t('cred_title_4')}</h3>
+                </div>
+                <p className="text-sm leading-relaxed text-muted-foreground">{t('cred_desc_4')}</p>
+              </motion.div>
+            </div>
+          </div>
+        </div>
 
         {/* Trust Section */}
         <motion.div

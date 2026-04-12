@@ -7,7 +7,7 @@ import Sidebar from './Sidebar';
 import { useTranslation } from 'react-i18next';
 
 export default function Header() {
-  const { step, style, setStyle } = useUploadContext();
+  const { step, style, setStyle, reset } = useUploadContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [rateLimitedMsg, setRateLimitedMsg] = useState<string | null>(null);
   const { t } = useTranslation();
@@ -37,7 +37,7 @@ export default function Header() {
   const currentStepIndex = step === 'generating' ? 1 : step === 'preview' ? 1 : step === 'checkout' ? 2 : step === 'success' ? 2 : 0;
 
   return (
-    <header className="sticky top-0 z-50 w-full bg-white">
+    <header className={`z-50 w-full bg-white ${step === 'preview' || step === 'checkout' ? 'relative' : 'sticky top-0'}`}>
 
       {/* Rate-limit marquee banner */}
       {/* Rate-limit marquee banner */}
@@ -63,10 +63,20 @@ export default function Header() {
           {/* Top bar with logo centered and buttons */}
           <div className="flex items-center justify-between mb-6">
             {/* Logo - Left */}
-            <a href="/" className="flex flex-col hover:opacity-80 transition-opacity">
+            <div
+              onClick={() => {
+                if (window.location.pathname !== '/') {
+                  window.location.href = '/';
+                } else {
+                  localStorage.removeItem('noblified_request_id');
+                  reset();
+                }
+              }}
+              className="flex flex-col hover:opacity-80 transition-opacity cursor-pointer"
+            >
               {/* Logo image */}
               <img src="/nobilified.png" alt="Nobilified" className="h-8 md:h-10 w-auto object-contain" />
-            </a>
+            </div>
 
             {/* Style Toggle - Center */}
             <div className="flex items-center gap-1 bg-card rounded-full px-1.5 py-1.5 border border-border">

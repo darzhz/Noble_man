@@ -139,3 +139,12 @@
 .animate-marquee {
   animation: marquee 20s linear infinite;
 }
+
+/* Hide scrollbar for testimonials strip */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

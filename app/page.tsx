@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { UploadProvider, useUploadContext } from '@/lib/uploadContext';
@@ -14,19 +14,33 @@ import SplashScreen from '@/components/ui/SplashScreen';
 function AppContent() {
   const { step, setStep, setRequestId, setProcessing, setSelectedProduct } = useUploadContext();
   const router = useRouter();
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // On landing, check if there's a pending requestId from a previous checkout
   useEffect(() => {
     const pendingRequestId = localStorage.getItem('noblified_request_id');
     const restoreRequestId = localStorage.getItem('noblified_restore_req');
+    const restoreUrl = localStorage.getItem('noblified_restore_url');
     const autoCheckout = localStorage.getItem('noblified_auto_checkout');
 
     if (restoreRequestId) {
       // Cart restore flow: trigger PreviewStep to poll and download the generation
       localStorage.removeItem('noblified_restore_req');
+      localStorage.removeItem('noblified_restore_url');
       setRequestId(restoreRequestId);
-      
+
+      if (restoreUrl) {
+        // Pass via localStorage or assume PreviewStep can pick it up?
+        // Actually, let's let PreviewStep pick it up! We don't have setPreviewUrl here.
+        // Let's store it back temporarily so PreviewStep can grab it
+        localStorage.setItem('noblified_restore_url_tmp', restoreUrl);
+      }
+
       if (autoCheckout) {
         localStorage.removeItem('noblified_auto_checkout');
         setSelectedProduct(autoCheckout as any);
@@ -39,6 +53,10 @@ function AppContent() {
       router.replace(`/result/${pendingRequestId}`);
     }
   }, [router, setRequestId, setStep]);
+
+  if (!mounted) {
+    return <div className="min-h-screen bg-background" />;
+  }
 
   return (
     <AnimatePresence mode="wait">

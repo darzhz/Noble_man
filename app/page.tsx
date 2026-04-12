@@ -14,7 +14,7 @@ import SplashScreen from '@/components/ui/SplashScreen';
 function AppContent() {
   const { step, setStep, setRequestId, setProcessing, setSelectedProduct } = useUploadContext();
   const router = useRouter();
-  const [showSplash, setShowSplash] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

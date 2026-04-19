@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUploadContext } from '@/lib/uploadContext';
 import { blobToDataUrl } from '@/lib/watermark';
+import { LOADING_IMAGES } from '@/lib/loadingImages';
 import { ChevronLeft, Loader2, Download, Printer, Frame, Check, Sparkles, Paintbrush, Landmark, Crown, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import IllustrationBlock from './IllustrationBlock';
@@ -27,18 +28,6 @@ const PROCESS_MESSAGES = [
   "Paintings take 3-5 days to complete, time to dry, frame and ship.",
   "Wait about a month.",
   "Enjoy the art and do not forget to share with friends and family."
-];
-
-const LOADING_IMAGES = [
-  "/loading/loading-bond.jpg",
-  "/loading/loading-cityline.jpg",
-  "/loading/loading-couple.jpg",
-  "/loading/loading-dog.jpg",
-  "/loading/loading-ellen.jpg",
-  "/loading/loading-gothic.jpg",
-  "/loading/loading-logan_paul.jpg",
-  "/loading/loading-mand_and_dog.jpg",
-  "/loading/loading-soldier.jpg",
 ];
 
 export default function PreviewStep() {

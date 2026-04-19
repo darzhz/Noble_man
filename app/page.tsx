@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { UploadProvider, useUploadContext } from '@/lib/uploadContext';
@@ -10,6 +10,7 @@ import PreviewStep from '@/components/steps/PreviewStep';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import SuccessStep from '@/components/steps/SuccessStep';
 import SplashScreen from '@/components/ui/SplashScreen';
+import { preloadLoadingImages } from '@/lib/loadingImages';
 
 function AppContent() {
   const { step, setStep, setRequestId, setProcessing, setSelectedProduct } = useUploadContext();
@@ -19,6 +20,7 @@ function AppContent() {
 
   useEffect(() => {
     setMounted(true);
+    preloadLoadingImages();
   }, []);
 
   // On landing, check if there's a pending requestId from a previous checkout

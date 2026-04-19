@@ -414,8 +414,6 @@ export default function UploadStep() {
               <Loader2 className="w-5 h-5 animate-spin" />
               {t('upload_btn_checking')}
             </>
-          ) : files.length > 0 ? (
-            t('upload_btn_reveal_count', { count: files.length }) as string
           ) : (
             t('upload_btn_reveal') as string
           )}

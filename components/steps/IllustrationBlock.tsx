@@ -23,15 +23,7 @@ export default function IllustrationBlock({ onBuyDigital, onBuyCanvas }: Illustr
         <div className="nob-panel">
           <div className="frame-outer frame-left">
             <div className="canvas-wrap">
-              <img src="/unroyal.jpeg" alt="AI digital preview" />
-              <div className="watermark-layer">
-                <span className="wm" style={{ top: '14%', left: '-8%' }}>nobilified</span>
-                <span className="wm" style={{ top: '34%', left: '18%' }}>nobilified</span>
-                <span className="wm" style={{ top: '54%', left: '-6%' }}>nobilified</span>
-                <span className="wm" style={{ top: '72%', left: '22%' }}>nobilified</span>
-                <span className="wm" style={{ top: '6%', left: '38%' }}>nobilified</span>
-                <span className="wm" style={{ top: '46%', left: '42%' }}>nobilified</span>
-              </div>
+              <img src="/digital_sample_guy.jpeg" alt="AI digital preview" />
             </div>
           </div>
           <span className="img-badge badge-digital">{t('illustration_badge_digital')}</span>

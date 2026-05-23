@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { FaceSwapImageResult } from './faceswap';
 
-export type UploadStep = 'upload' | 'generating' | 'preview' | 'checkout' | 'success';
+export type UploadStep = 'idle' | 'generating' | 'preview' | 'checkout' | 'success';
 export type StyleType = 'Pet Portraits' | 'Family Portraits' | 'Children\'s Portraits' | 'Couple Portraits' | 'Self-Portraits';
 
 export interface PurchaseData {
@@ -61,7 +61,7 @@ export interface UploadContextType {
 const UploadContext = createContext<UploadContextType | undefined>(undefined);
 
 export function UploadProvider({ children }: { children: ReactNode }) {
-  const [step, setStep] = useState<UploadStep>('upload');
+  const [step, setStep] = useState<UploadStep>('idle');
   const [uploadedImages, setUploadedImagesState] = useState<File[]>([]);
   const [generatedImage, setGeneratedImage] = useState<Blob | null>(null);
   const [watermarkedImage, setWatermarkedImage] = useState<Blob | null>(null);
@@ -102,7 +102,7 @@ export function UploadProvider({ children }: { children: ReactNode }) {
   };
 
   const reset = () => {
-    setStep('upload');
+    setStep('idle');
     setUploadedImagesState([]);
     setGeneratedImage(null);
     setWatermarkedImage(null);

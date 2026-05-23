@@ -1,13 +1,10 @@
 import React from 'react';
 import Header from '@/components/header/Header';
-import { UploadProvider } from '@/lib/uploadContext';
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
-      <UploadProvider>
-        <Header />
-      </UploadProvider>
+      <Header />
       <main className="max-w-4xl mx-auto px-4 md:px-8 py-16">
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-8 text-center">
           About Us

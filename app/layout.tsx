@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Playfair_Display, Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { I18nProvider } from '@/components/providers/I18nProvider'
+import { UploadProvider } from '@/lib/uploadContext'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -31,7 +32,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans antialiased ${isDarkMode ? 'dark' : ''}`} suppressHydrationWarning>
         <I18nProvider>
-          {children}
+          <UploadProvider>
+            {children}
+          </UploadProvider>
         </I18nProvider>
         <Analytics />
       </body>

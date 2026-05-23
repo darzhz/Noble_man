@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUploadContext } from '@/lib/uploadContext';
 import { blobToDataUrl } from '@/lib/watermark';
 import { LOADING_IMAGES } from '@/lib/loadingImages';
+import { slugify } from '@/lib/slug';
 import { ChevronLeft, Loader2, Download, Printer, Frame, Check, Sparkles, Paintbrush, Landmark, Crown, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import IllustrationBlock from './IllustrationBlock';
@@ -31,6 +33,7 @@ const PROCESS_MESSAGES = [
 ];
 
 export default function PreviewStep() {
+  const router = useRouter();
   const {
     setStep,
     uploadedImages,
@@ -370,7 +373,7 @@ export default function PreviewStep() {
           setProcessing(false);
           setUploadedImages([]);
           setError('Your photos could not be read. Please re-select your images and try again.');
-          setStep('upload');
+          router.push(promptTemplate ? `/upload/${slugify(promptTemplate)}` : '/');
           return;
         }
         const userId = `session-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -495,7 +498,8 @@ export default function PreviewStep() {
     setRequestId(null);
     setProcessing(true);
     isSubmittedRef.current = false;
-    setStep('upload');
+    setStep('idle');
+    router.push(promptTemplate ? `/upload/${slugify(promptTemplate)}` : '/');
   };
 
   const handleSingleDownload = (url: string, index: number = 0) => {

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import Header from '@/components/header/Header';
 import { motion } from 'framer-motion';
-import { UploadProvider } from '@/lib/uploadContext';
 import { useRouter } from 'next/navigation';
 import { ImagePlus, ShoppingBag, ArrowRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
@@ -62,9 +61,7 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <UploadProvider>
-        <Header />
-      </UploadProvider>
+      <Header />
       <main className="max-w-6xl mx-auto px-4 md:px-8 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

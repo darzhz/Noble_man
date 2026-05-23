@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useUploadContext, type UploadStep } from '@/lib/uploadContext';
 import { Menu, User, PawPrint, AlertTriangle } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useTranslation } from 'react-i18next';
 
 export default function Header() {
+  const router = useRouter();
+  const pathname = usePathname();
   const { step, style, setStyle, reset } = useUploadContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [rateLimitedMsg, setRateLimitedMsg] = useState<string | null>(null);
@@ -65,8 +68,8 @@ export default function Header() {
             {/* Logo - Left */}
             <div
               onClick={() => {
-                if (window.location.pathname !== '/') {
-                  window.location.href = '/';
+                if (pathname !== '/') {
+                  router.push('/');
                 } else {
                   localStorage.removeItem('noblified_request_id');
                   reset();

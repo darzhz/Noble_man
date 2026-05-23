@@ -3,17 +3,17 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { UploadProvider, useUploadContext } from '@/lib/uploadContext';
+import { useUploadContext } from '@/lib/uploadContext';
 import Header from '@/components/header/Header';
-import UploadStep from '@/components/steps/UploadStep';
+import StylePickerStep from '@/components/steps/StylePickerStep';
 import PreviewStep from '@/components/steps/PreviewStep';
 import CheckoutModal from '@/components/checkout/CheckoutModal';
 import SuccessStep from '@/components/steps/SuccessStep';
 import SplashScreen from '@/components/ui/SplashScreen';
 import { preloadLoadingImages } from '@/lib/loadingImages';
 
-function AppContent() {
-  const { step, setStep, setRequestId, setProcessing, setSelectedProduct } = useUploadContext();
+export default function Home() {
+  const { step, setStep, setRequestId, setSelectedProduct } = useUploadContext();
   const router = useRouter();
   const [showSplash, setShowSplash] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -31,15 +31,11 @@ function AppContent() {
     const autoCheckout = localStorage.getItem('noblified_auto_checkout');
 
     if (restoreRequestId) {
-      // Cart restore flow: trigger PreviewStep to poll and download the generation
       localStorage.removeItem('noblified_restore_req');
       localStorage.removeItem('noblified_restore_url');
       setRequestId(restoreRequestId);
 
       if (restoreUrl) {
-        // Pass via localStorage or assume PreviewStep can pick it up?
-        // Actually, let's let PreviewStep pick it up! We don't have setPreviewUrl here.
-        // Let's store it back temporarily so PreviewStep can grab it
         localStorage.setItem('noblified_restore_url_tmp', restoreUrl);
       }
 
@@ -51,10 +47,9 @@ function AppContent() {
         setStep('generating');
       }
     } else if (pendingRequestId) {
-      // Existing flow: hard redirect to result page
       router.replace(`/result/${pendingRequestId}`);
     }
-  }, [router, setRequestId, setStep]);
+  }, [router, setRequestId, setStep, setSelectedProduct]);
 
   if (!mounted) {
     return <div className="min-h-screen bg-background" />;
@@ -73,21 +68,17 @@ function AppContent() {
           className="min-h-screen bg-background"
         >
           <Header />
-          {step === 'upload' && <UploadStep />}
-          {(step === 'generating' || step === 'preview') && <PreviewStep />}
-          {step === 'checkout' && <CheckoutModal />}
-          {step === 'success' && <SuccessStep />}
+          {(step === 'generating' || step === 'preview') ? (
+            <PreviewStep />
+          ) : step === 'checkout' ? (
+            <CheckoutModal />
+          ) : step === 'success' ? (
+            <SuccessStep />
+          ) : (
+            <StylePickerStep />
+          )}
         </motion.main>
       )}
     </AnimatePresence>
   );
 }
-
-export default function Home() {
-  return (
-    <UploadProvider>
-      <AppContent />
-    </UploadProvider>
-  );
-}
-

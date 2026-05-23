@@ -1,11 +1,9 @@
 import Header from '@/components/header/Header';
-import { UploadProvider } from '@/lib/uploadContext';
 import { Mail, MessageSquare } from 'lucide-react';
 
 export default function SupportPage() {
   return (
-    <UploadProvider>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         <Header />
         <main className="max-w-4xl mx-auto px-4 py-16 text-center">
           <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">At Your Service, Your Majesty</h1>
@@ -59,7 +57,6 @@ export default function SupportPage() {
             </form>
           </div>
         </main>
-      </div>
-    </UploadProvider>
+    </div>
   );
 }

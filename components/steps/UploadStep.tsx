@@ -1,48 +1,29 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUploadContext } from '@/lib/uploadContext';
-import { Upload, AlertCircle, X, ImagePlus, Settings2, Loader2, Mail, Paintbrush, Crown, Landmark } from 'lucide-react';
+import { Upload, AlertCircle, X, ImagePlus, Loader2, Mail, Paintbrush, Crown, Landmark, ArrowLeft } from 'lucide-react';
 import CredibilitySection from '@/components/credibility/CredibilitySection';
-import StyleDrawer from './StyleDrawer';
 import { useTranslation } from 'react-i18next';
 
 const MAX_FILES = 5;
 const MAX_FILE_SIZE_MB = 10;
 
-const GALLERY_CONTENT: Record<string, { step: string; title: string; sub: string; img: string }[]> = {
-  'Pet Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/pet_dog.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/pet_cat.jpeg" }
-  ],
-  'Family Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/family1.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/family3.jpeg" }
-  ],
-  "Children's Portraits": [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/chilldren.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/children3.jpeg" }
-  ],
-  'Couple Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/couple1.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/couple3.jpeg" }
-  ],
-  'Self-Portraits': [
-    { step: "I", title: "The Selection", sub: "Upload Photo", img: "/human_asian_girl.jpeg" },
-    { step: "II", title: "The Creation", sub: "Hand Painted", img: "/human_child_and_cat.jpeg" }
-  ]
-};
+interface UploadStepProps {
+  previewImage?: string;
+}
 
-export default function UploadStep() {
-  const { setUploadedImages, setStep, setError, error, style, customerEmail, setCustomerEmail } = useUploadContext();
+export default function UploadStep({ previewImage }: UploadStepProps = {}) {
+  const router = useRouter();
+  const { setUploadedImages, setStep, setError, error, customerEmail, setCustomerEmail, promptTemplate } = useUploadContext();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { t } = useTranslation();
 
   const [isDragActive, setIsDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isEmailPromptOpen, setIsEmailPromptOpen] = useState(false);
   const [emailInput, setEmailInput] = useState('');
 
@@ -145,6 +126,10 @@ export default function UploadStep() {
       setError(t('upload_select_error') as string);
       return;
     }
+    if (!promptTemplate) {
+      router.push('/');
+      return;
+    }
 
     try {
       setIsCheckingLimit(true);
@@ -212,32 +197,52 @@ export default function UploadStep() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-background py-4 md:py-12 px-4 md:px-8"
+      className="relative min-h-screen bg-background py-4 md:py-12 px-4 md:px-8"
     >
-      <div className="max-w-2xl mx-auto space-y-4 md:space-y-12">
+      <div className="relative max-w-2xl mx-auto space-y-4 md:space-y-8">
 
-        {/* Hero Section */}
-        <div className="text-center space-y-2 pt-2 md:pt-8">
-          <motion.h2
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="font-serif text-4xl md:text-6xl font-bold text-foreground italic"
+        {/* Change-style affordance */}
+        <div className="pt-2 md:pt-4">
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            {t('hero_title_1')}
-            <br />
-            {t('hero_title_2')}
-          </motion.h2>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.5 }}
-            className="text-sm md:text-lg text-muted-foreground"
-          >
-            {t('hero_subtitle')}
-          </motion.p>
+            <ArrowLeft size={14} />
+            Change style
+          </button>
         </div>
+
+        {/* Chosen Style Preview Card */}
+        {promptTemplate && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.4 }}
+            className="flex items-center gap-4 md:gap-5 p-3 md:p-4 rounded-2xl border border-border bg-card shadow-sm"
+          >
+            {previewImage ? (
+              <img
+                src={previewImage}
+                alt={promptTemplate}
+                className="w-20 h-28 md:w-24 md:h-32 rounded-lg object-cover shrink-0 border border-border"
+              />
+            ) : (
+              <div className="w-20 h-28 md:w-24 md:h-32 rounded-lg bg-muted shrink-0 border border-border" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] md:text-xs uppercase tracking-[0.18em] text-muted-foreground mb-1">
+                Your style
+              </p>
+              <h2 className="font-serif text-xl md:text-2xl font-bold text-foreground leading-tight">
+                {promptTemplate}
+              </h2>
+              <p className="hidden md:block text-xs text-muted-foreground mt-2 leading-snug">
+                Upload your photo to see yourself in this style.
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Upload Zone */}
         <motion.div
@@ -418,67 +423,6 @@ export default function UploadStep() {
             t('upload_btn_reveal') as string
           )}
         </motion.button>
-        {/* <button
-          onClick={() => setIsDrawerOpen(true)}
-          className="opacity-10 hover:opacity-100 transition-opacity"
-          aria-label="Style Settings"
-        >
-          <Settings2 size={12} className="text-muted-foreground" />
-        </button> */}
-        {/* Subject Type Gallery */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="space-y-6"
-          onClick={() => setIsDrawerOpen(true)}
-        >
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={style || 'default'}
-              initial="hidden"
-              animate="show"
-              exit={{ opacity: 0, y: -20, transition: { duration: 0.3 } }}
-              variants={{
-                hidden: { opacity: 0 },
-                show: {
-                  opacity: 1,
-                  transition: { staggerChildren: 0.2, delayChildren: 0.1 }
-                }
-              }}
-              className="flex flex-row justify-center gap-4 sm:gap-8 md:gap-12 pt-10 pb-12"
-            >
-              {(GALLERY_CONTENT[style] || GALLERY_CONTENT['Self-Portraits']).map((item, index) => (
-                <motion.div
-                  key={index}
-                  variants={{
-                    hidden: { opacity: 0, y: 30 },
-                    show: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } }
-                  }}
-                  className="flex flex-col items-center text-center group flex-1 max-w-[140px] sm:max-w-[200px] md:max-w-[340px]"
-                >
-                  {/* The Frame: Architectural & Sharp */}
-                  <div className="relative transition-transform duration-700 group-hover:-translate-y-2 rounded-md">
-                    {/* Layered Accent Border (The "Matting") */}
-                    <div className="absolute -inset-2 border border-accent/30 scale-95 group-hover:scale-100 transition-transform duration-700 opacity-0 group-hover:opacity-100" />
-
-                    <div className="rounded-md relative w-36 h-48 sm:w-52 sm:h-72 md:w-80 md:h-[26rem] bg-muted overflow-hidden border border-border shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-                      <img
-                        src={item.img}
-                        alt={item.title}
-                        className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-110"
-                      />
-
-                      {/* Elegant Vignette Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-20 transition-opacity duration-700" />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
-
 
         {/* Who We Are Section */}
         <div className="max-w-5xl mx-auto pt-6 md:pt-8 px-2 sm:px-4 md:px-0 border-t border-border">
@@ -554,7 +498,6 @@ export default function UploadStep() {
         </motion.div>
       </div>
 
-      <StyleDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       <CredibilitySection />
     </motion.div>
   );

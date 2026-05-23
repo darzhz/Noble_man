@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Header from '@/components/header/Header';
-import { UploadProvider } from '@/lib/uploadContext';
 
 const canvasOptions = [
   {
@@ -34,8 +33,7 @@ const canvasDetails = [
 
 export default function PricingPage() {
   return (
-    <UploadProvider>
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
         <Header />
         <main className="max-w-5xl mx-auto px-4 py-12 md:py-16">
           <div className="text-center max-w-2xl mx-auto">
@@ -166,8 +164,7 @@ export default function PricingPage() {
               </button>
             </div>
           </div>
-        </main>
-      </div>
-    </UploadProvider>
+      </main>
+    </div>
   );
 }
